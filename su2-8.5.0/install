@@ -20,6 +20,6 @@ export NINJA=$PWD/../install/ninja/bin/ninja
 #endif
 
 #./../install/meson/local/bin/meson setup build --reconfigure --prefix=$PWD/../install/su2
-./../install/meson/local/bin/meson setup build --prefix=$PWD/../install/su2
+./../install/meson/local/bin/meson setup build --prefix=$PWD/../install/su2 -Denable-mlpcpp=true
 ./../install/ninja/bin/ninja -C build install -j4
 
