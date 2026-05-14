@@ -1,0 +1,5 @@
+rm -rf build
+rm -rf externals/ninja/build/
+rm -rf ../install/su2/
+rm -rf ../install/meson/
+rm -rf ../install/ninja/
