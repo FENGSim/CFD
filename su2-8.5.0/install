@@ -1,5 +1,5 @@
 sudo apt update
-sudo apt -y install cmake make gcc g++ p7zip-full python3 python3-pip python3-setuptools re2c python3-fs
+sudo apt -y install cmake make gcc g++ p7zip-full python3 python3-pip python3-setuptools re2c python3-fs libgtest-dev
 
 cd externals/meson/
 python3 setup.py install --prefix=$PWD/../../../install/meson
