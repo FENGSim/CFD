@@ -1,0 +1,7 @@
+sudo apt update
+sudo apt -y install cmake make gcc g++ p7zip-full python3 python3-pip
+
+# ./meson.py build --reconfigure --prefix=$PWD/../install/su2_install
+#./meson.py build --prefix=$PWD/../install/su2_install
+#./ninja -C build install -j4
+
