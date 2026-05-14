@@ -1,7 +1,25 @@
 sudo apt update
-sudo apt -y install cmake make gcc g++ p7zip-full python3 python3-pip
+sudo apt -y install cmake make gcc g++ p7zip-full python3 python3-pip python3-setuptools re2c python3-fs
 
-# ./meson.py build --reconfigure --prefix=$PWD/../install/su2_install
-#./meson.py build --prefix=$PWD/../install/su2_install
-#./ninja -C build install -j4
+cd externals/meson/
+python3 setup.py install --prefix=$PWD/../../../install/meson
+cd ../ninja/
+mkdir build
+cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=../../../../install/ninja
+make -j4
+make install
+cd ../../../
+
+export PYTHONPATH=$PWD/../install/meson/local/lib/python3.13/dist-packages/meson-1.8.2-py3.13.egg/:$PYTHONPATH
+export NINJA=$PWD/../install/ninja/bin/ninja
+
+# need to comment the following lines in su2-8.5.0/meson.build
+#if not fsmod.exists('su2preconfig.timestamp')
+#  error('SU2 must be (pre-)configured with the extended Meson script (./meson.py) or with the ./preconfigure.py script in the SU2 root directory.')
+#endif
+
+#./../install/meson/local/bin/meson setup build --reconfigure --prefix=$PWD/../install/su2
+./../install/meson/local/bin/meson setup build --prefix=$PWD/../install/su2
+./../install/ninja/bin/ninja -C build install -j4
 
