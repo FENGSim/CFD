@@ -1,0 +1,29 @@
+{
+    "General": {
+        "Precision": "double",
+        "Dim": "3",
+        "IsTest": "false"
+    },
+    "SpatialResolutionFluid": {
+        "Degree": "2",
+        "RefineSpace": "0"
+    },
+    "SpatialResolutionStructure": {
+        "Degree": "1",
+        "RefineSpace": "0"
+    },
+    "FSI" : {
+        "AccelerationMethod": "IQN_ILS",
+        "AbsTol": "1.e-12",
+        "RelTol": "1.e-3",
+        "OmegaInit": "0.1",
+        "PartitionedIterMax": "100"
+    },
+    "Application": {
+    },
+    "Output": {
+        "OutputDirectory": "output/bending_wall/",
+        "OutputName": "fsi_test",
+        "WriteOutput": "false"
+    }
+}

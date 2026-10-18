@@ -1,0 +1,1071 @@
+
+
+
+________________________________________________________________________________
+                                                                                
+                ////////                      ///////   ////////                
+                ///                           ///  ///  ///                     
+                //////    ///  ///  ///////   ///  ///  /// ////                
+                ///         ////    //   //   ///  ///  ///  ///                
+                ////////  ///  ///  ///////// ///////   ////////                
+                                                                                
+               High-Order Discontinuous Galerkin for the Exa-Scale              
+________________________________________________________________________________
+
+
+MPI info:
+
+  Number of processes:                       1
+
+Setting up elasticity solver:
+
+List of parameters:
+
+Mathematical model:
+  Problem type:                              Unsteady
+  Body force:                                true
+  Large deformation:                         true
+  Pull back body force:                      false
+  Pull back traction:                        false
+  Material type:                             StVenantKirchhoff
+
+Physical quantities:
+  Density:                                   1.0000e+00
+
+Temporal discretization:
+  Start time:                                0.0000e+00
+  End time:                                  1.0000e+00
+  Max. number of time steps:                 4294967295
+  Temporal refinements:                      0
+  Time integration type:                     BossakAlpha
+  Spectral radius:                           8.0000e-01
+  Solver information:
+  Interval physical time:                    1.7977e+308
+  Interval wall time:                        1.7977e+308
+  Interval time steps:                       10000
+
+Spatial Discretization:
+  Triangulation type:                        Distributed
+  Element type:                              Hypercube
+  Number of global refinements:              1
+  Create coarse triangulations:              false
+  Mapping degree:                            1
+  Mapping degree coarse grids:               1
+  Polynomial degree:                         3
+  Use matrix-based operator:                 false
+
+Solver:
+
+Newton:
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-10
+  Relative solver tolerance:                 1.0000e-10
+
+Linear solver:
+  Solver:                                    CG
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-12
+  Relative solver tolerance:                 1.0000e-06
+  Preconditioner:                            Multigrid
+  Multigrid type:                            phMG
+  p-sequence:                                Bisect
+  Min degree matrix-free:                    1
+  Smoother:                                  Chebyshev
+  Preconditioner smoother:                   PointJacobi
+  Iterations smoother:                       5
+  Smoothing range:                           2.0000e+01
+  Iterations eigenvalue estimation:          20
+  Coarse grid solver:                        Chebyshev
+  Coarse grid preconditioner:                PointJacobi
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-12
+  Relative solver tolerance:                 1.0000e-03
+  Maximum size of Krylov space:              30
+
+Generating grid for 3-dimensional problem:
+
+  Max. number of refinements:                1
+  Number of cells:                           8
+
+Construct elasticity operator ...
+
+Continuous Galerkin finite element discretization:
+
+  degree of 1D polynomials:                  3
+  number of dofs per cell:                   192
+  number of dofs (total):                    1029
+
+... done!
+
+Setup elasticity operator ...
+
+... done!
+
+Setup elasticity time integrator ...
+
+... done!
+
+Starting time loop ...
+
+Calculate error for all fields at time t = 0.0000e+00:
+  Absolute error (L2-norm): 0.00000e+00
+
+________________________________________________________________________________
+
+ Time step number = 1       t = 0.00000e+00 -> t + dt = 1.00000e+00
+________________________________________________________________________________
+
+Calculate error for all fields at time t = 1.0000e+00:
+  Absolute error (L2-norm): 1.20565e-02
+
+
+
+________________________________________________________________________________
+                                                                                
+                ////////                      ///////   ////////                
+                ///                           ///  ///  ///                     
+                //////    ///  ///  ///////   ///  ///  /// ////                
+                ///         ////    //   //   ///  ///  ///  ///                
+                ////////  ///  ///  ///////// ///////   ////////                
+                                                                                
+               High-Order Discontinuous Galerkin for the Exa-Scale              
+________________________________________________________________________________
+
+
+MPI info:
+
+  Number of processes:                       1
+
+Setting up elasticity solver:
+
+List of parameters:
+
+Mathematical model:
+  Problem type:                              Unsteady
+  Body force:                                true
+  Large deformation:                         true
+  Pull back body force:                      false
+  Pull back traction:                        false
+  Material type:                             StVenantKirchhoff
+
+Physical quantities:
+  Density:                                   1.0000e+00
+
+Temporal discretization:
+  Start time:                                0.0000e+00
+  End time:                                  1.0000e+00
+  Max. number of time steps:                 4294967295
+  Temporal refinements:                      1
+  Time integration type:                     BossakAlpha
+  Spectral radius:                           8.0000e-01
+  Solver information:
+  Interval physical time:                    1.7977e+308
+  Interval wall time:                        1.7977e+308
+  Interval time steps:                       10000
+
+Spatial Discretization:
+  Triangulation type:                        Distributed
+  Element type:                              Hypercube
+  Number of global refinements:              1
+  Create coarse triangulations:              false
+  Mapping degree:                            1
+  Mapping degree coarse grids:               1
+  Polynomial degree:                         3
+  Use matrix-based operator:                 false
+
+Solver:
+
+Newton:
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-10
+  Relative solver tolerance:                 1.0000e-10
+
+Linear solver:
+  Solver:                                    CG
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-12
+  Relative solver tolerance:                 1.0000e-06
+  Preconditioner:                            Multigrid
+  Multigrid type:                            phMG
+  p-sequence:                                Bisect
+  Min degree matrix-free:                    1
+  Smoother:                                  Chebyshev
+  Preconditioner smoother:                   PointJacobi
+  Iterations smoother:                       5
+  Smoothing range:                           2.0000e+01
+  Iterations eigenvalue estimation:          20
+  Coarse grid solver:                        Chebyshev
+  Coarse grid preconditioner:                PointJacobi
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-12
+  Relative solver tolerance:                 1.0000e-03
+  Maximum size of Krylov space:              30
+
+Generating grid for 3-dimensional problem:
+
+  Max. number of refinements:                1
+  Number of cells:                           8
+
+Construct elasticity operator ...
+
+Continuous Galerkin finite element discretization:
+
+  degree of 1D polynomials:                  3
+  number of dofs per cell:                   192
+  number of dofs (total):                    1029
+
+... done!
+
+Setup elasticity operator ...
+
+... done!
+
+Setup elasticity time integrator ...
+
+... done!
+
+Starting time loop ...
+
+Calculate error for all fields at time t = 0.0000e+00:
+  Absolute error (L2-norm): 0.00000e+00
+
+________________________________________________________________________________
+
+ Time step number = 1       t = 0.00000e+00 -> t + dt = 5.00000e-01
+________________________________________________________________________________
+
+Calculate error for all fields at time t = 1.0000e+00:
+  Absolute error (L2-norm): 1.07445e-02
+
+
+
+________________________________________________________________________________
+                                                                                
+                ////////                      ///////   ////////                
+                ///                           ///  ///  ///                     
+                //////    ///  ///  ///////   ///  ///  /// ////                
+                ///         ////    //   //   ///  ///  ///  ///                
+                ////////  ///  ///  ///////// ///////   ////////                
+                                                                                
+               High-Order Discontinuous Galerkin for the Exa-Scale              
+________________________________________________________________________________
+
+
+MPI info:
+
+  Number of processes:                       1
+
+Setting up elasticity solver:
+
+List of parameters:
+
+Mathematical model:
+  Problem type:                              Unsteady
+  Body force:                                true
+  Large deformation:                         true
+  Pull back body force:                      false
+  Pull back traction:                        false
+  Material type:                             StVenantKirchhoff
+
+Physical quantities:
+  Density:                                   1.0000e+00
+
+Temporal discretization:
+  Start time:                                0.0000e+00
+  End time:                                  1.0000e+00
+  Max. number of time steps:                 4294967295
+  Temporal refinements:                      2
+  Time integration type:                     BossakAlpha
+  Spectral radius:                           8.0000e-01
+  Solver information:
+  Interval physical time:                    1.7977e+308
+  Interval wall time:                        1.7977e+308
+  Interval time steps:                       10000
+
+Spatial Discretization:
+  Triangulation type:                        Distributed
+  Element type:                              Hypercube
+  Number of global refinements:              1
+  Create coarse triangulations:              false
+  Mapping degree:                            1
+  Mapping degree coarse grids:               1
+  Polynomial degree:                         3
+  Use matrix-based operator:                 false
+
+Solver:
+
+Newton:
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-10
+  Relative solver tolerance:                 1.0000e-10
+
+Linear solver:
+  Solver:                                    CG
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-12
+  Relative solver tolerance:                 1.0000e-06
+  Preconditioner:                            Multigrid
+  Multigrid type:                            phMG
+  p-sequence:                                Bisect
+  Min degree matrix-free:                    1
+  Smoother:                                  Chebyshev
+  Preconditioner smoother:                   PointJacobi
+  Iterations smoother:                       5
+  Smoothing range:                           2.0000e+01
+  Iterations eigenvalue estimation:          20
+  Coarse grid solver:                        Chebyshev
+  Coarse grid preconditioner:                PointJacobi
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-12
+  Relative solver tolerance:                 1.0000e-03
+  Maximum size of Krylov space:              30
+
+Generating grid for 3-dimensional problem:
+
+  Max. number of refinements:                1
+  Number of cells:                           8
+
+Construct elasticity operator ...
+
+Continuous Galerkin finite element discretization:
+
+  degree of 1D polynomials:                  3
+  number of dofs per cell:                   192
+  number of dofs (total):                    1029
+
+... done!
+
+Setup elasticity operator ...
+
+... done!
+
+Setup elasticity time integrator ...
+
+... done!
+
+Starting time loop ...
+
+Calculate error for all fields at time t = 0.0000e+00:
+  Absolute error (L2-norm): 0.00000e+00
+
+________________________________________________________________________________
+
+ Time step number = 1       t = 0.00000e+00 -> t + dt = 2.50000e-01
+________________________________________________________________________________
+
+Calculate error for all fields at time t = 1.0000e+00:
+  Absolute error (L2-norm): 2.31243e-02
+
+
+
+________________________________________________________________________________
+                                                                                
+                ////////                      ///////   ////////                
+                ///                           ///  ///  ///                     
+                //////    ///  ///  ///////   ///  ///  /// ////                
+                ///         ////    //   //   ///  ///  ///  ///                
+                ////////  ///  ///  ///////// ///////   ////////                
+                                                                                
+               High-Order Discontinuous Galerkin for the Exa-Scale              
+________________________________________________________________________________
+
+
+MPI info:
+
+  Number of processes:                       1
+
+Setting up elasticity solver:
+
+List of parameters:
+
+Mathematical model:
+  Problem type:                              Unsteady
+  Body force:                                true
+  Large deformation:                         true
+  Pull back body force:                      false
+  Pull back traction:                        false
+  Material type:                             StVenantKirchhoff
+
+Physical quantities:
+  Density:                                   1.0000e+00
+
+Temporal discretization:
+  Start time:                                0.0000e+00
+  End time:                                  1.0000e+00
+  Max. number of time steps:                 4294967295
+  Temporal refinements:                      3
+  Time integration type:                     BossakAlpha
+  Spectral radius:                           8.0000e-01
+  Solver information:
+  Interval physical time:                    1.7977e+308
+  Interval wall time:                        1.7977e+308
+  Interval time steps:                       10000
+
+Spatial Discretization:
+  Triangulation type:                        Distributed
+  Element type:                              Hypercube
+  Number of global refinements:              1
+  Create coarse triangulations:              false
+  Mapping degree:                            1
+  Mapping degree coarse grids:               1
+  Polynomial degree:                         3
+  Use matrix-based operator:                 false
+
+Solver:
+
+Newton:
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-10
+  Relative solver tolerance:                 1.0000e-10
+
+Linear solver:
+  Solver:                                    CG
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-12
+  Relative solver tolerance:                 1.0000e-06
+  Preconditioner:                            Multigrid
+  Multigrid type:                            phMG
+  p-sequence:                                Bisect
+  Min degree matrix-free:                    1
+  Smoother:                                  Chebyshev
+  Preconditioner smoother:                   PointJacobi
+  Iterations smoother:                       5
+  Smoothing range:                           2.0000e+01
+  Iterations eigenvalue estimation:          20
+  Coarse grid solver:                        Chebyshev
+  Coarse grid preconditioner:                PointJacobi
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-12
+  Relative solver tolerance:                 1.0000e-03
+  Maximum size of Krylov space:              30
+
+Generating grid for 3-dimensional problem:
+
+  Max. number of refinements:                1
+  Number of cells:                           8
+
+Construct elasticity operator ...
+
+Continuous Galerkin finite element discretization:
+
+  degree of 1D polynomials:                  3
+  number of dofs per cell:                   192
+  number of dofs (total):                    1029
+
+... done!
+
+Setup elasticity operator ...
+
+... done!
+
+Setup elasticity time integrator ...
+
+... done!
+
+Starting time loop ...
+
+Calculate error for all fields at time t = 0.0000e+00:
+  Absolute error (L2-norm): 0.00000e+00
+
+________________________________________________________________________________
+
+ Time step number = 1       t = 0.00000e+00 -> t + dt = 1.25000e-01
+________________________________________________________________________________
+
+Calculate error for all fields at time t = 1.0000e+00:
+  Absolute error (L2-norm): 1.09743e-02
+
+
+
+________________________________________________________________________________
+                                                                                
+                ////////                      ///////   ////////                
+                ///                           ///  ///  ///                     
+                //////    ///  ///  ///////   ///  ///  /// ////                
+                ///         ////    //   //   ///  ///  ///  ///                
+                ////////  ///  ///  ///////// ///////   ////////                
+                                                                                
+               High-Order Discontinuous Galerkin for the Exa-Scale              
+________________________________________________________________________________
+
+
+MPI info:
+
+  Number of processes:                       1
+
+Setting up elasticity solver:
+
+List of parameters:
+
+Mathematical model:
+  Problem type:                              Unsteady
+  Body force:                                true
+  Large deformation:                         true
+  Pull back body force:                      false
+  Pull back traction:                        false
+  Material type:                             StVenantKirchhoff
+
+Physical quantities:
+  Density:                                   1.0000e+00
+
+Temporal discretization:
+  Start time:                                0.0000e+00
+  End time:                                  1.0000e+00
+  Max. number of time steps:                 4294967295
+  Temporal refinements:                      4
+  Time integration type:                     BossakAlpha
+  Spectral radius:                           8.0000e-01
+  Solver information:
+  Interval physical time:                    1.7977e+308
+  Interval wall time:                        1.7977e+308
+  Interval time steps:                       10000
+
+Spatial Discretization:
+  Triangulation type:                        Distributed
+  Element type:                              Hypercube
+  Number of global refinements:              1
+  Create coarse triangulations:              false
+  Mapping degree:                            1
+  Mapping degree coarse grids:               1
+  Polynomial degree:                         3
+  Use matrix-based operator:                 false
+
+Solver:
+
+Newton:
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-10
+  Relative solver tolerance:                 1.0000e-10
+
+Linear solver:
+  Solver:                                    CG
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-12
+  Relative solver tolerance:                 1.0000e-06
+  Preconditioner:                            Multigrid
+  Multigrid type:                            phMG
+  p-sequence:                                Bisect
+  Min degree matrix-free:                    1
+  Smoother:                                  Chebyshev
+  Preconditioner smoother:                   PointJacobi
+  Iterations smoother:                       5
+  Smoothing range:                           2.0000e+01
+  Iterations eigenvalue estimation:          20
+  Coarse grid solver:                        Chebyshev
+  Coarse grid preconditioner:                PointJacobi
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-12
+  Relative solver tolerance:                 1.0000e-03
+  Maximum size of Krylov space:              30
+
+Generating grid for 3-dimensional problem:
+
+  Max. number of refinements:                1
+  Number of cells:                           8
+
+Construct elasticity operator ...
+
+Continuous Galerkin finite element discretization:
+
+  degree of 1D polynomials:                  3
+  number of dofs per cell:                   192
+  number of dofs (total):                    1029
+
+... done!
+
+Setup elasticity operator ...
+
+... done!
+
+Setup elasticity time integrator ...
+
+... done!
+
+Starting time loop ...
+
+Calculate error for all fields at time t = 0.0000e+00:
+  Absolute error (L2-norm): 0.00000e+00
+
+________________________________________________________________________________
+
+ Time step number = 1       t = 0.00000e+00 -> t + dt = 6.25000e-02
+________________________________________________________________________________
+
+Calculate error for all fields at time t = 1.0000e+00:
+  Absolute error (L2-norm): 3.31750e-03
+
+
+
+________________________________________________________________________________
+                                                                                
+                ////////                      ///////   ////////                
+                ///                           ///  ///  ///                     
+                //////    ///  ///  ///////   ///  ///  /// ////                
+                ///         ////    //   //   ///  ///  ///  ///                
+                ////////  ///  ///  ///////// ///////   ////////                
+                                                                                
+               High-Order Discontinuous Galerkin for the Exa-Scale              
+________________________________________________________________________________
+
+
+MPI info:
+
+  Number of processes:                       1
+
+Setting up elasticity solver:
+
+List of parameters:
+
+Mathematical model:
+  Problem type:                              Unsteady
+  Body force:                                true
+  Large deformation:                         true
+  Pull back body force:                      false
+  Pull back traction:                        false
+  Material type:                             StVenantKirchhoff
+
+Physical quantities:
+  Density:                                   1.0000e+00
+
+Temporal discretization:
+  Start time:                                0.0000e+00
+  End time:                                  1.0000e+00
+  Max. number of time steps:                 4294967295
+  Temporal refinements:                      5
+  Time integration type:                     BossakAlpha
+  Spectral radius:                           8.0000e-01
+  Solver information:
+  Interval physical time:                    1.7977e+308
+  Interval wall time:                        1.7977e+308
+  Interval time steps:                       10000
+
+Spatial Discretization:
+  Triangulation type:                        Distributed
+  Element type:                              Hypercube
+  Number of global refinements:              1
+  Create coarse triangulations:              false
+  Mapping degree:                            1
+  Mapping degree coarse grids:               1
+  Polynomial degree:                         3
+  Use matrix-based operator:                 false
+
+Solver:
+
+Newton:
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-10
+  Relative solver tolerance:                 1.0000e-10
+
+Linear solver:
+  Solver:                                    CG
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-12
+  Relative solver tolerance:                 1.0000e-06
+  Preconditioner:                            Multigrid
+  Multigrid type:                            phMG
+  p-sequence:                                Bisect
+  Min degree matrix-free:                    1
+  Smoother:                                  Chebyshev
+  Preconditioner smoother:                   PointJacobi
+  Iterations smoother:                       5
+  Smoothing range:                           2.0000e+01
+  Iterations eigenvalue estimation:          20
+  Coarse grid solver:                        Chebyshev
+  Coarse grid preconditioner:                PointJacobi
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-12
+  Relative solver tolerance:                 1.0000e-03
+  Maximum size of Krylov space:              30
+
+Generating grid for 3-dimensional problem:
+
+  Max. number of refinements:                1
+  Number of cells:                           8
+
+Construct elasticity operator ...
+
+Continuous Galerkin finite element discretization:
+
+  degree of 1D polynomials:                  3
+  number of dofs per cell:                   192
+  number of dofs (total):                    1029
+
+... done!
+
+Setup elasticity operator ...
+
+... done!
+
+Setup elasticity time integrator ...
+
+... done!
+
+Starting time loop ...
+
+Calculate error for all fields at time t = 0.0000e+00:
+  Absolute error (L2-norm): 0.00000e+00
+
+________________________________________________________________________________
+
+ Time step number = 1       t = 0.00000e+00 -> t + dt = 3.12500e-02
+________________________________________________________________________________
+
+Calculate error for all fields at time t = 1.0000e+00:
+  Absolute error (L2-norm): 8.50263e-04
+
+
+
+________________________________________________________________________________
+                                                                                
+                ////////                      ///////   ////////                
+                ///                           ///  ///  ///                     
+                //////    ///  ///  ///////   ///  ///  /// ////                
+                ///         ////    //   //   ///  ///  ///  ///                
+                ////////  ///  ///  ///////// ///////   ////////                
+                                                                                
+               High-Order Discontinuous Galerkin for the Exa-Scale              
+________________________________________________________________________________
+
+
+MPI info:
+
+  Number of processes:                       1
+
+Setting up elasticity solver:
+
+List of parameters:
+
+Mathematical model:
+  Problem type:                              Unsteady
+  Body force:                                true
+  Large deformation:                         true
+  Pull back body force:                      false
+  Pull back traction:                        false
+  Material type:                             StVenantKirchhoff
+
+Physical quantities:
+  Density:                                   1.0000e+00
+
+Temporal discretization:
+  Start time:                                0.0000e+00
+  End time:                                  1.0000e+00
+  Max. number of time steps:                 4294967295
+  Temporal refinements:                      6
+  Time integration type:                     BossakAlpha
+  Spectral radius:                           8.0000e-01
+  Solver information:
+  Interval physical time:                    1.7977e+308
+  Interval wall time:                        1.7977e+308
+  Interval time steps:                       10000
+
+Spatial Discretization:
+  Triangulation type:                        Distributed
+  Element type:                              Hypercube
+  Number of global refinements:              1
+  Create coarse triangulations:              false
+  Mapping degree:                            1
+  Mapping degree coarse grids:               1
+  Polynomial degree:                         3
+  Use matrix-based operator:                 false
+
+Solver:
+
+Newton:
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-10
+  Relative solver tolerance:                 1.0000e-10
+
+Linear solver:
+  Solver:                                    CG
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-12
+  Relative solver tolerance:                 1.0000e-06
+  Preconditioner:                            Multigrid
+  Multigrid type:                            phMG
+  p-sequence:                                Bisect
+  Min degree matrix-free:                    1
+  Smoother:                                  Chebyshev
+  Preconditioner smoother:                   PointJacobi
+  Iterations smoother:                       5
+  Smoothing range:                           2.0000e+01
+  Iterations eigenvalue estimation:          20
+  Coarse grid solver:                        Chebyshev
+  Coarse grid preconditioner:                PointJacobi
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-12
+  Relative solver tolerance:                 1.0000e-03
+  Maximum size of Krylov space:              30
+
+Generating grid for 3-dimensional problem:
+
+  Max. number of refinements:                1
+  Number of cells:                           8
+
+Construct elasticity operator ...
+
+Continuous Galerkin finite element discretization:
+
+  degree of 1D polynomials:                  3
+  number of dofs per cell:                   192
+  number of dofs (total):                    1029
+
+... done!
+
+Setup elasticity operator ...
+
+... done!
+
+Setup elasticity time integrator ...
+
+... done!
+
+Starting time loop ...
+
+Calculate error for all fields at time t = 0.0000e+00:
+  Absolute error (L2-norm): 0.00000e+00
+
+________________________________________________________________________________
+
+ Time step number = 1       t = 0.00000e+00 -> t + dt = 1.56250e-02
+________________________________________________________________________________
+
+Calculate error for all fields at time t = 1.0000e+00:
+  Absolute error (L2-norm): 2.11954e-04
+
+
+
+________________________________________________________________________________
+                                                                                
+                ////////                      ///////   ////////                
+                ///                           ///  ///  ///                     
+                //////    ///  ///  ///////   ///  ///  /// ////                
+                ///         ////    //   //   ///  ///  ///  ///                
+                ////////  ///  ///  ///////// ///////   ////////                
+                                                                                
+               High-Order Discontinuous Galerkin for the Exa-Scale              
+________________________________________________________________________________
+
+
+MPI info:
+
+  Number of processes:                       1
+
+Setting up elasticity solver:
+
+List of parameters:
+
+Mathematical model:
+  Problem type:                              Unsteady
+  Body force:                                true
+  Large deformation:                         true
+  Pull back body force:                      false
+  Pull back traction:                        false
+  Material type:                             StVenantKirchhoff
+
+Physical quantities:
+  Density:                                   1.0000e+00
+
+Temporal discretization:
+  Start time:                                0.0000e+00
+  End time:                                  1.0000e+00
+  Max. number of time steps:                 4294967295
+  Temporal refinements:                      7
+  Time integration type:                     BossakAlpha
+  Spectral radius:                           8.0000e-01
+  Solver information:
+  Interval physical time:                    1.7977e+308
+  Interval wall time:                        1.7977e+308
+  Interval time steps:                       10000
+
+Spatial Discretization:
+  Triangulation type:                        Distributed
+  Element type:                              Hypercube
+  Number of global refinements:              1
+  Create coarse triangulations:              false
+  Mapping degree:                            1
+  Mapping degree coarse grids:               1
+  Polynomial degree:                         3
+  Use matrix-based operator:                 false
+
+Solver:
+
+Newton:
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-10
+  Relative solver tolerance:                 1.0000e-10
+
+Linear solver:
+  Solver:                                    CG
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-12
+  Relative solver tolerance:                 1.0000e-06
+  Preconditioner:                            Multigrid
+  Multigrid type:                            phMG
+  p-sequence:                                Bisect
+  Min degree matrix-free:                    1
+  Smoother:                                  Chebyshev
+  Preconditioner smoother:                   PointJacobi
+  Iterations smoother:                       5
+  Smoothing range:                           2.0000e+01
+  Iterations eigenvalue estimation:          20
+  Coarse grid solver:                        Chebyshev
+  Coarse grid preconditioner:                PointJacobi
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-12
+  Relative solver tolerance:                 1.0000e-03
+  Maximum size of Krylov space:              30
+
+Generating grid for 3-dimensional problem:
+
+  Max. number of refinements:                1
+  Number of cells:                           8
+
+Construct elasticity operator ...
+
+Continuous Galerkin finite element discretization:
+
+  degree of 1D polynomials:                  3
+  number of dofs per cell:                   192
+  number of dofs (total):                    1029
+
+... done!
+
+Setup elasticity operator ...
+
+... done!
+
+Setup elasticity time integrator ...
+
+... done!
+
+Starting time loop ...
+
+Calculate error for all fields at time t = 0.0000e+00:
+  Absolute error (L2-norm): 0.00000e+00
+
+________________________________________________________________________________
+
+ Time step number = 1       t = 0.00000e+00 -> t + dt = 7.81250e-03
+________________________________________________________________________________
+
+Calculate error for all fields at time t = 1.0000e+00:
+  Absolute error (L2-norm): 5.23495e-05
+
+
+
+________________________________________________________________________________
+                                                                                
+                ////////                      ///////   ////////                
+                ///                           ///  ///  ///                     
+                //////    ///  ///  ///////   ///  ///  /// ////                
+                ///         ////    //   //   ///  ///  ///  ///                
+                ////////  ///  ///  ///////// ///////   ////////                
+                                                                                
+               High-Order Discontinuous Galerkin for the Exa-Scale              
+________________________________________________________________________________
+
+
+MPI info:
+
+  Number of processes:                       1
+
+Setting up elasticity solver:
+
+List of parameters:
+
+Mathematical model:
+  Problem type:                              Unsteady
+  Body force:                                true
+  Large deformation:                         true
+  Pull back body force:                      false
+  Pull back traction:                        false
+  Material type:                             StVenantKirchhoff
+
+Physical quantities:
+  Density:                                   1.0000e+00
+
+Temporal discretization:
+  Start time:                                0.0000e+00
+  End time:                                  1.0000e+00
+  Max. number of time steps:                 4294967295
+  Temporal refinements:                      8
+  Time integration type:                     BossakAlpha
+  Spectral radius:                           8.0000e-01
+  Solver information:
+  Interval physical time:                    1.7977e+308
+  Interval wall time:                        1.7977e+308
+  Interval time steps:                       10000
+
+Spatial Discretization:
+  Triangulation type:                        Distributed
+  Element type:                              Hypercube
+  Number of global refinements:              1
+  Create coarse triangulations:              false
+  Mapping degree:                            1
+  Mapping degree coarse grids:               1
+  Polynomial degree:                         3
+  Use matrix-based operator:                 false
+
+Solver:
+
+Newton:
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-10
+  Relative solver tolerance:                 1.0000e-10
+
+Linear solver:
+  Solver:                                    CG
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-12
+  Relative solver tolerance:                 1.0000e-06
+  Preconditioner:                            Multigrid
+  Multigrid type:                            phMG
+  p-sequence:                                Bisect
+  Min degree matrix-free:                    1
+  Smoother:                                  Chebyshev
+  Preconditioner smoother:                   PointJacobi
+  Iterations smoother:                       5
+  Smoothing range:                           2.0000e+01
+  Iterations eigenvalue estimation:          20
+  Coarse grid solver:                        Chebyshev
+  Coarse grid preconditioner:                PointJacobi
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-12
+  Relative solver tolerance:                 1.0000e-03
+  Maximum size of Krylov space:              30
+
+Generating grid for 3-dimensional problem:
+
+  Max. number of refinements:                1
+  Number of cells:                           8
+
+Construct elasticity operator ...
+
+Continuous Galerkin finite element discretization:
+
+  degree of 1D polynomials:                  3
+  number of dofs per cell:                   192
+  number of dofs (total):                    1029
+
+... done!
+
+Setup elasticity operator ...
+
+... done!
+
+Setup elasticity time integrator ...
+
+... done!
+
+Starting time loop ...
+
+Calculate error for all fields at time t = 0.0000e+00:
+  Absolute error (L2-norm): 0.00000e+00
+
+________________________________________________________________________________
+
+ Time step number = 1       t = 0.00000e+00 -> t + dt = 3.90625e-03
+________________________________________________________________________________
+
+Calculate error for all fields at time t = 1.0000e+00:
+  Absolute error (L2-norm): 1.27229e-05

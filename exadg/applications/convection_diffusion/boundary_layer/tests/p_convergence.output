@@ -1,0 +1,595 @@
+
+
+
+________________________________________________________________________________
+                                                                                
+                ////////                      ///////   ////////                
+                ///                           ///  ///  ///                     
+                //////    ///  ///  ///////   ///  ///  /// ////                
+                ///         ////    //   //   ///  ///  ///  ///                
+                ////////  ///  ///  ///////// ///////   ////////                
+                                                                                
+               High-Order Discontinuous Galerkin for the Exa-Scale              
+________________________________________________________________________________
+
+
+MPI info:
+
+  Number of processes:                       1
+
+Setting up scalar convection-diffusion solver:
+
+List of parameters:
+
+Mathematical model:
+  Problem type:                              Steady
+  Equation type:                             ConvectionDiffusion
+  Right-hand side:                           false
+  Analytical velocity field:                 true
+  ALE formulation:                           false
+  Formulation convective term:               DivergenceFormulation
+
+Physical quantities:
+  Diffusivity:                               1.0000e-01
+
+Temporal discretization:
+  Temporal discretization method:            BDF
+  Maximum number of time steps:              4294967295
+  Temporal refinements:                      0
+  Order of time integrator:                  2
+  Start with low order method:               true
+  Treatment of convective term:              Implicit
+  Calculation of time step size:             UserSpecified
+  Adaptive time stepping:                    false
+  Restarted simulation:                      false
+  Restart:
+  Write restart:                             false
+
+Spatial Discretization:
+  Triangulation type:                        Distributed
+  Element type:                              Hypercube
+  Number of global refinements:              4
+  Create coarse triangulations:              false
+  Mapping degree:                            1
+  Mapping degree coarse grids:               1
+  Polynomial degree:                         1
+  Numerical flux convective term:            LaxFriedrichsFlux
+  IP factor viscous term:                    1.0000e+00
+
+Solver:
+  Solver:                                    GMRES
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-20
+  Relative solver tolerance:                 1.0000e-08
+  Maximum size of Krylov space:              100
+  Preconditioner:                            Multigrid
+  Update preconditioner:                     false
+  Block Jacobi matrix-free:                  false
+  Multigrid operator type:                   ReactionConvectionDiffusion
+  Multigrid type:                            phMG
+  p-sequence:                                Bisect
+  Min degree matrix-free:                    1
+  Smoother:                                  Jacobi
+  Preconditioner smoother:                   BlockJacobi
+  Iterations smoother:                       5
+  Relaxation factor:                         8.0000e-01
+  Coarse grid solver:                        GMRES
+  Coarse grid preconditioner:                PointJacobi
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-12
+  Relative solver tolerance:                 1.0000e-03
+  Maximum size of Krylov space:              30
+  Solver information:
+  Interval physical time:                    5.0000e-02
+  Interval wall time:                        1.7977e+308
+  Interval time steps:                       4294967295
+
+Numerical parameters:
+  Use cell-based face loops:                 true
+  Store velocity in DoF vector:              false
+  Use over-integration:                      false
+
+Generating grid for 2-dimensional problem:
+
+  Max. number of refinements:                4
+  Number of cells:                           256
+
+Construct convection-diffusion operator ...
+
+Discontinuous Galerkin finite element discretization:
+
+  degree of 1D polynomials:                  1
+  number of dofs per cell:                   4
+  number of dofs (total):                    1024
+
+... done!
+
+Setup convection-diffusion operator ...
+
+... done!
+
+Calculate error for all fields for initial data:
+  Relative error (L2-norm): 1.00000e+00
+
+Solving steady state problem ...
+
+... done!
+
+Calculate error for all fields for solution data:
+  Relative error (L2-norm): 1.40308e-02
+
+
+
+________________________________________________________________________________
+                                                                                
+                ////////                      ///////   ////////                
+                ///                           ///  ///  ///                     
+                //////    ///  ///  ///////   ///  ///  /// ////                
+                ///         ////    //   //   ///  ///  ///  ///                
+                ////////  ///  ///  ///////// ///////   ////////                
+                                                                                
+               High-Order Discontinuous Galerkin for the Exa-Scale              
+________________________________________________________________________________
+
+
+MPI info:
+
+  Number of processes:                       1
+
+Setting up scalar convection-diffusion solver:
+
+List of parameters:
+
+Mathematical model:
+  Problem type:                              Steady
+  Equation type:                             ConvectionDiffusion
+  Right-hand side:                           false
+  Analytical velocity field:                 true
+  ALE formulation:                           false
+  Formulation convective term:               DivergenceFormulation
+
+Physical quantities:
+  Diffusivity:                               1.0000e-01
+
+Temporal discretization:
+  Temporal discretization method:            BDF
+  Maximum number of time steps:              4294967295
+  Temporal refinements:                      0
+  Order of time integrator:                  2
+  Start with low order method:               true
+  Treatment of convective term:              Implicit
+  Calculation of time step size:             UserSpecified
+  Adaptive time stepping:                    false
+  Restarted simulation:                      false
+  Restart:
+  Write restart:                             false
+
+Spatial Discretization:
+  Triangulation type:                        Distributed
+  Element type:                              Hypercube
+  Number of global refinements:              4
+  Create coarse triangulations:              false
+  Mapping degree:                            1
+  Mapping degree coarse grids:               1
+  Polynomial degree:                         2
+  Numerical flux convective term:            LaxFriedrichsFlux
+  IP factor viscous term:                    1.0000e+00
+
+Solver:
+  Solver:                                    GMRES
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-20
+  Relative solver tolerance:                 1.0000e-08
+  Maximum size of Krylov space:              100
+  Preconditioner:                            Multigrid
+  Update preconditioner:                     false
+  Block Jacobi matrix-free:                  false
+  Multigrid operator type:                   ReactionConvectionDiffusion
+  Multigrid type:                            phMG
+  p-sequence:                                Bisect
+  Min degree matrix-free:                    1
+  Smoother:                                  Jacobi
+  Preconditioner smoother:                   BlockJacobi
+  Iterations smoother:                       5
+  Relaxation factor:                         8.0000e-01
+  Coarse grid solver:                        GMRES
+  Coarse grid preconditioner:                PointJacobi
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-12
+  Relative solver tolerance:                 1.0000e-03
+  Maximum size of Krylov space:              30
+  Solver information:
+  Interval physical time:                    5.0000e-02
+  Interval wall time:                        1.7977e+308
+  Interval time steps:                       4294967295
+
+Numerical parameters:
+  Use cell-based face loops:                 true
+  Store velocity in DoF vector:              false
+  Use over-integration:                      false
+
+Generating grid for 2-dimensional problem:
+
+  Max. number of refinements:                4
+  Number of cells:                           256
+
+Construct convection-diffusion operator ...
+
+Discontinuous Galerkin finite element discretization:
+
+  degree of 1D polynomials:                  2
+  number of dofs per cell:                   9
+  number of dofs (total):                    2304
+
+... done!
+
+Setup convection-diffusion operator ...
+
+... done!
+
+Calculate error for all fields for initial data:
+  Relative error (L2-norm): 1.00000e+00
+
+Solving steady state problem ...
+
+... done!
+
+Calculate error for all fields for solution data:
+  Relative error (L2-norm): 1.43439e-03
+
+
+
+________________________________________________________________________________
+                                                                                
+                ////////                      ///////   ////////                
+                ///                           ///  ///  ///                     
+                //////    ///  ///  ///////   ///  ///  /// ////                
+                ///         ////    //   //   ///  ///  ///  ///                
+                ////////  ///  ///  ///////// ///////   ////////                
+                                                                                
+               High-Order Discontinuous Galerkin for the Exa-Scale              
+________________________________________________________________________________
+
+
+MPI info:
+
+  Number of processes:                       1
+
+Setting up scalar convection-diffusion solver:
+
+List of parameters:
+
+Mathematical model:
+  Problem type:                              Steady
+  Equation type:                             ConvectionDiffusion
+  Right-hand side:                           false
+  Analytical velocity field:                 true
+  ALE formulation:                           false
+  Formulation convective term:               DivergenceFormulation
+
+Physical quantities:
+  Diffusivity:                               1.0000e-01
+
+Temporal discretization:
+  Temporal discretization method:            BDF
+  Maximum number of time steps:              4294967295
+  Temporal refinements:                      0
+  Order of time integrator:                  2
+  Start with low order method:               true
+  Treatment of convective term:              Implicit
+  Calculation of time step size:             UserSpecified
+  Adaptive time stepping:                    false
+  Restarted simulation:                      false
+  Restart:
+  Write restart:                             false
+
+Spatial Discretization:
+  Triangulation type:                        Distributed
+  Element type:                              Hypercube
+  Number of global refinements:              4
+  Create coarse triangulations:              false
+  Mapping degree:                            1
+  Mapping degree coarse grids:               1
+  Polynomial degree:                         3
+  Numerical flux convective term:            LaxFriedrichsFlux
+  IP factor viscous term:                    1.0000e+00
+
+Solver:
+  Solver:                                    GMRES
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-20
+  Relative solver tolerance:                 1.0000e-08
+  Maximum size of Krylov space:              100
+  Preconditioner:                            Multigrid
+  Update preconditioner:                     false
+  Block Jacobi matrix-free:                  false
+  Multigrid operator type:                   ReactionConvectionDiffusion
+  Multigrid type:                            phMG
+  p-sequence:                                Bisect
+  Min degree matrix-free:                    1
+  Smoother:                                  Jacobi
+  Preconditioner smoother:                   BlockJacobi
+  Iterations smoother:                       5
+  Relaxation factor:                         8.0000e-01
+  Coarse grid solver:                        GMRES
+  Coarse grid preconditioner:                PointJacobi
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-12
+  Relative solver tolerance:                 1.0000e-03
+  Maximum size of Krylov space:              30
+  Solver information:
+  Interval physical time:                    5.0000e-02
+  Interval wall time:                        1.7977e+308
+  Interval time steps:                       4294967295
+
+Numerical parameters:
+  Use cell-based face loops:                 true
+  Store velocity in DoF vector:              false
+  Use over-integration:                      false
+
+Generating grid for 2-dimensional problem:
+
+  Max. number of refinements:                4
+  Number of cells:                           256
+
+Construct convection-diffusion operator ...
+
+Discontinuous Galerkin finite element discretization:
+
+  degree of 1D polynomials:                  3
+  number of dofs per cell:                   16
+  number of dofs (total):                    4096
+
+... done!
+
+Setup convection-diffusion operator ...
+
+... done!
+
+Calculate error for all fields for initial data:
+  Relative error (L2-norm): 1.00000e+00
+
+Solving steady state problem ...
+
+... done!
+
+Calculate error for all fields for solution data:
+  Relative error (L2-norm): 1.11727e-04
+
+
+
+________________________________________________________________________________
+                                                                                
+                ////////                      ///////   ////////                
+                ///                           ///  ///  ///                     
+                //////    ///  ///  ///////   ///  ///  /// ////                
+                ///         ////    //   //   ///  ///  ///  ///                
+                ////////  ///  ///  ///////// ///////   ////////                
+                                                                                
+               High-Order Discontinuous Galerkin for the Exa-Scale              
+________________________________________________________________________________
+
+
+MPI info:
+
+  Number of processes:                       1
+
+Setting up scalar convection-diffusion solver:
+
+List of parameters:
+
+Mathematical model:
+  Problem type:                              Steady
+  Equation type:                             ConvectionDiffusion
+  Right-hand side:                           false
+  Analytical velocity field:                 true
+  ALE formulation:                           false
+  Formulation convective term:               DivergenceFormulation
+
+Physical quantities:
+  Diffusivity:                               1.0000e-01
+
+Temporal discretization:
+  Temporal discretization method:            BDF
+  Maximum number of time steps:              4294967295
+  Temporal refinements:                      0
+  Order of time integrator:                  2
+  Start with low order method:               true
+  Treatment of convective term:              Implicit
+  Calculation of time step size:             UserSpecified
+  Adaptive time stepping:                    false
+  Restarted simulation:                      false
+  Restart:
+  Write restart:                             false
+
+Spatial Discretization:
+  Triangulation type:                        Distributed
+  Element type:                              Hypercube
+  Number of global refinements:              4
+  Create coarse triangulations:              false
+  Mapping degree:                            1
+  Mapping degree coarse grids:               1
+  Polynomial degree:                         4
+  Numerical flux convective term:            LaxFriedrichsFlux
+  IP factor viscous term:                    1.0000e+00
+
+Solver:
+  Solver:                                    GMRES
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-20
+  Relative solver tolerance:                 1.0000e-08
+  Maximum size of Krylov space:              100
+  Preconditioner:                            Multigrid
+  Update preconditioner:                     false
+  Block Jacobi matrix-free:                  false
+  Multigrid operator type:                   ReactionConvectionDiffusion
+  Multigrid type:                            phMG
+  p-sequence:                                Bisect
+  Min degree matrix-free:                    1
+  Smoother:                                  Jacobi
+  Preconditioner smoother:                   BlockJacobi
+  Iterations smoother:                       5
+  Relaxation factor:                         8.0000e-01
+  Coarse grid solver:                        GMRES
+  Coarse grid preconditioner:                PointJacobi
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-12
+  Relative solver tolerance:                 1.0000e-03
+  Maximum size of Krylov space:              30
+  Solver information:
+  Interval physical time:                    5.0000e-02
+  Interval wall time:                        1.7977e+308
+  Interval time steps:                       4294967295
+
+Numerical parameters:
+  Use cell-based face loops:                 true
+  Store velocity in DoF vector:              false
+  Use over-integration:                      false
+
+Generating grid for 2-dimensional problem:
+
+  Max. number of refinements:                4
+  Number of cells:                           256
+
+Construct convection-diffusion operator ...
+
+Discontinuous Galerkin finite element discretization:
+
+  degree of 1D polynomials:                  4
+  number of dofs per cell:                   25
+  number of dofs (total):                    6400
+
+... done!
+
+Setup convection-diffusion operator ...
+
+... done!
+
+Calculate error for all fields for initial data:
+  Relative error (L2-norm): 1.00000e+00
+
+Solving steady state problem ...
+
+... done!
+
+Calculate error for all fields for solution data:
+  Relative error (L2-norm): 6.62871e-06
+
+
+
+________________________________________________________________________________
+                                                                                
+                ////////                      ///////   ////////                
+                ///                           ///  ///  ///                     
+                //////    ///  ///  ///////   ///  ///  /// ////                
+                ///         ////    //   //   ///  ///  ///  ///                
+                ////////  ///  ///  ///////// ///////   ////////                
+                                                                                
+               High-Order Discontinuous Galerkin for the Exa-Scale              
+________________________________________________________________________________
+
+
+MPI info:
+
+  Number of processes:                       1
+
+Setting up scalar convection-diffusion solver:
+
+List of parameters:
+
+Mathematical model:
+  Problem type:                              Steady
+  Equation type:                             ConvectionDiffusion
+  Right-hand side:                           false
+  Analytical velocity field:                 true
+  ALE formulation:                           false
+  Formulation convective term:               DivergenceFormulation
+
+Physical quantities:
+  Diffusivity:                               1.0000e-01
+
+Temporal discretization:
+  Temporal discretization method:            BDF
+  Maximum number of time steps:              4294967295
+  Temporal refinements:                      0
+  Order of time integrator:                  2
+  Start with low order method:               true
+  Treatment of convective term:              Implicit
+  Calculation of time step size:             UserSpecified
+  Adaptive time stepping:                    false
+  Restarted simulation:                      false
+  Restart:
+  Write restart:                             false
+
+Spatial Discretization:
+  Triangulation type:                        Distributed
+  Element type:                              Hypercube
+  Number of global refinements:              4
+  Create coarse triangulations:              false
+  Mapping degree:                            1
+  Mapping degree coarse grids:               1
+  Polynomial degree:                         5
+  Numerical flux convective term:            LaxFriedrichsFlux
+  IP factor viscous term:                    1.0000e+00
+
+Solver:
+  Solver:                                    GMRES
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-20
+  Relative solver tolerance:                 1.0000e-08
+  Maximum size of Krylov space:              100
+  Preconditioner:                            Multigrid
+  Update preconditioner:                     false
+  Block Jacobi matrix-free:                  false
+  Multigrid operator type:                   ReactionConvectionDiffusion
+  Multigrid type:                            phMG
+  p-sequence:                                Bisect
+  Min degree matrix-free:                    1
+  Smoother:                                  Jacobi
+  Preconditioner smoother:                   BlockJacobi
+  Iterations smoother:                       5
+  Relaxation factor:                         8.0000e-01
+  Coarse grid solver:                        GMRES
+  Coarse grid preconditioner:                PointJacobi
+  Maximum number of iterations:              10000
+  Absolute solver tolerance:                 1.0000e-12
+  Relative solver tolerance:                 1.0000e-03
+  Maximum size of Krylov space:              30
+  Solver information:
+  Interval physical time:                    5.0000e-02
+  Interval wall time:                        1.7977e+308
+  Interval time steps:                       4294967295
+
+Numerical parameters:
+  Use cell-based face loops:                 true
+  Store velocity in DoF vector:              false
+  Use over-integration:                      false
+
+Generating grid for 2-dimensional problem:
+
+  Max. number of refinements:                4
+  Number of cells:                           256
+
+Construct convection-diffusion operator ...
+
+Discontinuous Galerkin finite element discretization:
+
+  degree of 1D polynomials:                  5
+  number of dofs per cell:                   36
+  number of dofs (total):                    9216
+
+... done!
+
+Setup convection-diffusion operator ...
+
+... done!
+
+Calculate error for all fields for initial data:
+  Relative error (L2-norm): 1.00000e+00
+
+Solving steady state problem ...
+
+... done!
+
+Calculate error for all fields for solution data:
+  Relative error (L2-norm): 4.68837e-07

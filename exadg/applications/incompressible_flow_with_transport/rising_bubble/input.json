@@ -1,0 +1,28 @@
+{
+    "General": {
+        "Precision": "double",
+        "Dim": "2",
+        "IsTest": "false"
+    },
+    "Fluid": {
+        "SpatialResolution": {
+            "Degree": "3",
+            "RefineSpace": "5"
+        },
+        "Output": {
+            "OutputDirectory": "output/rising_bubble/",
+            "OutputName": "fluid",
+            "WriteOutput": "false"
+        }
+    },
+    "Scalar0": {
+        "SpatialResolution": {
+            "Degree": "3"
+        },
+        "Output": {
+            "OutputDirectory": "output/rising_bubble/",
+            "OutputName": "scalar0",
+            "WriteOutput": "false"
+        }
+    }
+}

@@ -1,0 +1,22 @@
+
+GMRES solver (double), size M=3:
+
+L2 norm of initial residual = 7.3e+00
+L2 norm of final residual = 3.6e-15
+
+GMRES solver (double), size M=10000:
+
+L2 norm of initial residual = 1.0e+02
+L2 norm of final residual = 5.9e-13
+
+GMRES solver (VectorizedArray<double>), size M=3, start with exact solution:
+
+converged.
+
+GMRES solver (VectorizedArray<double>), size M=3, start with zero solution:
+
+converged.
+
+GMRES solver (VectorizedArray<double>), size M=3, solve different systems:
+
+converged.

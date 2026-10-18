@@ -1,0 +1,29 @@
+{
+    "General": {
+        "Precision": "double",
+        "Dim": "3",
+        "IsTest": "false"
+    },
+    "Main": {
+        "SpatialResolution": {
+            "Degree": "2",
+            "RefineSpace": "0"
+        },
+        "Output": {
+            "OutputDirectory": "output/template_precursor/",
+            "OutputName": "main",
+            "WriteOutput": "false"
+        }
+    },
+    "Precursor": {
+        "SpatialResolution": {
+            "Degree": "2",
+            "RefineSpace": "0"
+        },
+        "Output": {
+            "OutputDirectory": "output/template_precursor/",
+            "OutputName": "precursor",
+            "WriteOutput": "false"
+        }
+    }
+}

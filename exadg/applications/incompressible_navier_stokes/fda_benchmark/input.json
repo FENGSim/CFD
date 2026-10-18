@@ -1,0 +1,29 @@
+{
+    "General": {
+        "Precision": "double",
+        "Dim": "3",
+        "IsTest": "false"
+    },
+    "Main": {
+        "SpatialResolution": {
+            "Degree": "3",
+            "RefineSpace": "0"
+        },
+        "Output": {
+            "OutputDirectory": "output/fda/",
+            "OutputName": "main",
+            "WriteOutput": "false"
+        }
+    },
+    "Precursor": {
+        "SpatialResolution": {
+            "Degree": "3",
+            "RefineSpace": "1"
+        },
+        "Output": {
+            "OutputDirectory": "output/fda/",
+            "OutputName": "precursor",
+            "WriteOutput": "false"
+        }
+    }
+}
