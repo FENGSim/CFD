@@ -1,0 +1,517 @@
+// -----------------------------------------------------------------------------
+//
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception OR LGPL-2.1-or-later
+// Copyright (C) 1998 - 2026 by the deal.II authors
+//
+// This file is part of the deal.II library.
+//
+// Detailed license information governing the source code and contributions
+// can be found in LICENSE.md and CONTRIBUTING.md at the top level directory.
+//
+// -----------------------------------------------------------------------------
+
+#ifndef dealii_tria_levels_h
+#define dealii_tria_levels_h
+
+
+#include <deal.II/base/config.h>
+
+#include <deal.II/base/point.h>
+
+#include <deal.II/grid/reference_cell.h>
+#include <deal.II/grid/tria_objects.h>
+#include <deal.II/grid/tria_objects_orientations.h>
+
+#include <cstdint>
+#include <vector>
+
+DEAL_II_NAMESPACE_OPEN
+
+namespace internal
+{
+  namespace TriangulationImplementation
+  {
+    /**
+     * Store all information which belongs to one level of the multilevel
+     * hierarchy.
+     *
+     * In TriaLevel, all cell data is stored which is not dependent on the
+     * dimension, e.g. a field to store the refinement flag for the cells
+     * (what a cell actually is is declared elsewhere), etc. See also
+     * TriaObjects for non level-oriented data.
+     *
+     * There is another field, which may fit in here, namely the material data
+     * (for cells) or the boundary indicators (for faces), but since we need
+     * for a line or quad either boundary information or material data, we
+     * store them with the lines and quads rather than with the common data.
+     * Likewise, in 3d, we need boundary indicators for lines and quads (we
+     * need to know how to refine a line if the two adjacent faces have
+     * different boundary indicators), and material data for cells.
+     */
+    template <int dim, int spacedim = dim>
+    class TriaLevel
+    {
+    public:
+      /**
+       * Constructor.
+       *
+       * @param[in] max_children_per_cell Maximum number of children (across all
+       *            relevant ReferenceCell types) a cell in the present
+       *            Triangulation may have.
+       *
+       * @param[in] max_faces_per_cell Maximum number of faces (i.e., neighbors)
+       *            per cell. Like @p max_children_per_cell, this is the maximum
+       *            over all relevant ReferenceCell types.
+       *
+       * @param[in] max_vertices_per_cell Maximum number of vertices (i.e.,
+       *            neighbors) per cell. Like @p max_children_per_cell, this is
+       *            the maximum over all relevant ReferenceCell types.
+       */
+      TriaLevel(const unsigned int max_children_per_cell,
+                const unsigned int max_faces_per_cell,
+                const unsigned int max_vertices_per_cell)
+        : children_per_object(max_children_per_cell)
+        , faces_per_object(max_faces_per_cell)
+        , vertices_per_object(max_vertices_per_cell)
+        , cells(dim, max_children_per_cell, max_faces_per_cell)
+        , face_orientations(0, max_faces_per_cell)
+      {}
+
+      /**
+       * Default constructor (needed by Boost).
+       */
+      TriaLevel();
+
+      /**
+       * Resize all internal arrays and populate with default values.
+       *
+       * @param[in] n_cells Total number of cells this object should store.
+       *
+       * @param[in] orientation_needed Whether or not the level needs to store
+       *            orientation values.
+       */
+      void
+      allocate(const std::size_t n_cells, const bool orientation_needed);
+
+      /**
+       * Resize all internal arrays and populate with default values.
+       *
+       * @param[in] n_new_cells Number of new cells to add to the end of each
+       *            array.
+       *
+       * @param[in] orientation_needed Whether or not the level needs to store
+       *            orientation values.
+       *
+       * @param[in] has_tetrahedra Whether or not the level contains tetrahedra.
+       */
+      void
+      allocate_end(const std::size_t n_new_cells,
+                   const bool        orientation_needed,
+                   const bool        has_tetrahedra);
+
+      /**
+       * Return the number of cells in the level.
+       */
+      std::size_t
+      size() const;
+
+      /**
+       * Return the index of @p index's neighbor on face @p face_no. See the
+       * documentation of neighbors for more information.
+       */
+      int
+      neighbor_index(const int index, const unsigned int face_no) const;
+
+      /**
+       * Return the level of @p index's neighbor on face @p face_no. See the
+       * documentation of neighbors for more information.
+       */
+      int
+      neighbor_level(const int index, const unsigned int face_no) const;
+
+      /**
+       * Set the @p face_no-th neighbor of cell @p index to (@p neighbor_level,
+       * @p neighbor_index).
+       */
+      void
+      set_neighbor(const int          index,
+                   const unsigned int face_no,
+                   const int          neighbor_level,
+                   const int          neighbor_index);
+
+      /**
+       * Set the @p vertex_no-th vertex index of cell @p index to @p
+       * vertex_index.
+       */
+      void
+      set_cached_vertex_index(const int          index,
+                              const unsigned int vertex_no,
+                              const unsigned int vertex_index);
+
+      /**
+       * Get the vertex index for cell @p vertex and vertex @p vertex_no.
+       *
+       * @note These vertices are cached, meaning this information duplicates
+       * the vertex indices stored in the usual way (as objects which bound
+       * lines) for performance reasons (e.g., the cache bypasses orientation
+       * calculations).
+       */
+      unsigned int
+      cached_vertex_index(const int index, const unsigned int vertex_no) const;
+
+      /**
+       * The number of children stored per object. In practice, to support mixed
+       * meshes, this is the maximum number of children per ReferenceCell across
+       * all relevant ReferenceCell types used by the Triangulation.
+       */
+      unsigned int children_per_object;
+
+      /**
+       * The number of faces (i.e., neighbors) stored per object. Like
+       * children_per_object, this is typically the maximum value across all
+       * relevant ReferenceCell types.
+       */
+      unsigned int faces_per_object;
+
+      /**
+       * The number of vertices stored per object. Like children_per_object,
+       * this is typically the maximum value across all relevant ReferenceCell
+       * types.
+       */
+      unsigned int vertices_per_object;
+
+      /**
+       * @p RefinementCase<dim>::Type flags for the cells to be refined with
+       * or not (RefinementCase<dim>::no_refinement). The meaning what a cell
+       * is, is dimension specific, therefore also the length of this vector
+       * depends on the dimension: in one dimension, the length of this vector
+       * equals the length of the @p lines vector, in two dimensions that of
+       * the @p quads vector, etc.
+       */
+      std::vector<std::uint8_t> refine_flags;
+
+      /**
+       * @p IsotropicRefinementChoices direction for the tetrahedral cells to be
+       * refined with
+       * or choose the optimal way @p ReferenceCell::isotropic_refinement.
+       */
+      std::vector<std::uint8_t> refine_choice;
+
+      /**
+       * Same meaning as the one above, but specifies whether a cell must be
+       * coarsened.
+       */
+      std::vector<bool> coarsen_flags;
+
+      /**
+       * An integer that, for every active cell, stores the how many-th active
+       * cell this is. For non-active cells, this value is unused and set to
+       * an invalid value.
+       */
+      std::vector<unsigned int> active_cell_indices;
+
+      /**
+       * Global cell index of each active cell.
+       */
+      std::vector<types::global_cell_index> global_active_cell_indices;
+
+      /**
+       * Global cell index of each cell on the given level.
+       */
+      std::vector<types::global_cell_index> global_level_cell_indices;
+
+      /**
+       * One integer per cell to store which subdomain it belongs to. This
+       * field is most often used in parallel computations, where it denotes
+       * which processor shall work on/owns the cells with a given subdomain
+       * number.
+       *
+       * This number is only used on active cells.
+       */
+      std::vector<types::subdomain_id> subdomain_ids;
+
+      /**
+       * The subdomain id used on each level for parallel multigrid.
+       *
+       * In contrast to the subdomain_id, this number is also used on inactive
+       * cells once the mesh has been partitioned also on the lower levels of
+       * the multigrid hierarchy.
+       */
+      std::vector<types::subdomain_id> level_subdomain_ids;
+
+      /**
+       * One integer for every consecutive pair of cells to store which index
+       * their parent has. Information is only stored for the even (index 0, 2
+       * 4, ...) child.
+       *
+       * (We store this information once for each pair of cells since every
+       * refinement, isotropic or anisotropic, and in any space dimension,
+       * always creates children in multiples of two, so there is no need to
+       * store the parent index for every cell.)
+       */
+      std::vector<int> parents;
+
+      /**
+       * One bool per cell to indicate the direction of the normal true:  use
+       * orientation from vertex false: revert the orientation. See
+       * @ref GlossDirectionFlag.
+       *
+       * This is only used for codim==1 meshes.
+       */
+      std::vector<bool> direction_flags;
+
+      /**
+       * The object containing the data on lines and related functions
+       */
+      TriaObjects cells;
+
+      /**
+       * For edges, we enforce a standard convention that opposite
+       * edges should be parallel. Now, that's enforceable in most
+       * cases, and we have code that makes sure that if a mesh allows
+       * this to happen, that we have this convention. We also know
+       * that it is always possible to have opposite faces have
+       * parallel normal vectors. (For both things, see the paper by
+       * Agelek, Anderson, Bangerth, Barth in the ACM Transactions on
+       * Mathematical Software mentioned in the documentation of the
+       * GridTools::consistently_order_cells() function.)
+       *
+       * The problem is that we originally had another condition, namely that
+       * faces 0, 2 and 4 have normals that point into the cell, while the
+       * other faces have normals that point outward. It turns out that this
+       * is not always possible. In effect, we have to store whether the
+       * normal vector of each face of each cell follows this convention or
+       * not. If this is so, then this variable stores a @p true value,
+       * otherwise a @p false value.
+       *
+       * In effect, this field has <code>6*n_cells</code> elements, being the
+       * number of cells times the six faces each has.
+       *
+       * @note This array is only used in dim == 2 or dim == 3: for dim == 1
+       * meshes consist purely of lines which are always consistently oriented.
+       */
+      TriaObjectsOrientations face_orientations;
+
+      /**
+       * Reference cell type of each cell.
+       *
+       * @note Used only for dim=2 and dim=3.
+       */
+      std::vector<ReferenceCell<dim>> reference_cell;
+
+      /**
+       * Determine an estimate for the memory consumption (in bytes) of this
+       * object.
+       */
+      std::size_t
+      memory_consumption() const;
+
+      /**
+       * Read or write the data of this object to or from a stream for the
+       * purpose of serialization using the [BOOST serialization
+       * library](https://www.boost.org/doc/libs/1_74_0/libs/serialization/doc/index.html).
+       */
+      template <class Archive>
+      void
+      serialize(Archive &ar, const unsigned int version);
+
+    private:
+      /**
+       * Levels of the neighbors of the cells. This array uses a stride of
+       * faces_per_object. If a neighbor does not exist (cell is at the
+       * boundary), then <tt>level=-1</tt> is set.
+       *
+       * <em>Conventions:</em> The @p ith neighbor of a cell is the one which
+       * shares the @p ith face (@p Line in 2d, @p Quad in 3d) of this cell.
+       *
+       * The neighbor of a cell has at most the same level as this cell, i.e.
+       * it may or may not be refined.
+       *
+       * In one dimension, a neighbor may have any level less or equal the
+       * level of this cell. If it has the same level, it may be refined an
+       * arbitrary number of times, but the neighbor pointer still points to
+       * the cell on the same level, while the neighbors of the children of
+       * the neighbor may point to this cell or its children.
+       *
+       * In two and more dimensions, the neighbor is either on the same level
+       * and refined (in which case its children have neighbor pointers to
+       * this cell or its direct children), unrefined on the same level or one
+       * level down (in which case its neighbor pointer points to the parent
+       * cell of this cell).
+       */
+      std::vector<std::int8_t> neighbor_levels;
+
+      /**
+       * Indices of the neighbors of the cells. This array uses a stride of
+       * faces_per_object.
+       *
+       * If a neighbor does not exist (cell is at the boundary),
+       * <tt>index=-1</tt> is set.
+       */
+      std::vector<int> neighbor_indices;
+
+      /**
+       * A cache for the vertex indices of the cells (`structdim == dim`), in
+       * order to more quickly retrieve these frequently accessed quantities.
+       * Analogously to other arrays, the stride is vertices_per_object.
+       */
+      std::vector<unsigned int> cell_vertex_indices_cache;
+    };
+
+
+
+    template <int dim, int spacedim>
+    std::size_t
+    TriaLevel<dim, spacedim>::size() const
+    {
+      Assert(refine_flags.size() == coarsen_flags.size() &&
+               refine_flags.size() == active_cell_indices.size() &&
+               refine_flags.size() == global_active_cell_indices.size() &&
+               refine_flags.size() == global_level_cell_indices.size() &&
+               refine_flags.size() == subdomain_ids.size() &&
+               refine_flags.size() == level_subdomain_ids.size() &&
+               refine_flags.size() == cells.n_objects(),
+             ExcInternalError());
+      if constexpr (dim > 1)
+        Assert(refine_flags.size() == reference_cell.size(),
+               ExcInternalError());
+
+      return refine_flags.size();
+    }
+
+
+
+    template <int dim, int spacedim>
+    inline int
+    TriaLevel<dim, spacedim>::neighbor_index(const int          index,
+                                             const unsigned int face_no) const
+    {
+      Assert(index >= 0, ExcInternalError());
+      AssertIndexRange(face_no, faces_per_object);
+      const std::size_t i = index * faces_per_object + face_no;
+      AssertIndexRange(i, neighbor_indices.size());
+      return neighbor_indices[i];
+    }
+
+
+
+    template <int dim, int spacedim>
+    inline int
+    TriaLevel<dim, spacedim>::neighbor_level(const int          index,
+                                             const unsigned int face_no) const
+    {
+      Assert(index >= 0, ExcInternalError());
+      AssertIndexRange(face_no, faces_per_object);
+      const std::size_t i = index * faces_per_object + face_no;
+      AssertIndexRange(i, neighbor_levels.size());
+      return neighbor_levels[i];
+    }
+
+
+
+    template <int dim, int spacedim>
+    inline void
+    TriaLevel<dim, spacedim>::set_neighbor(const int          index,
+                                           const unsigned int face_no,
+                                           const int          neighbor_level,
+                                           const int          neighbor_index)
+    {
+      Assert(index >= 0, ExcInternalError());
+      AssertIndexRange(face_no, faces_per_object);
+      Assert(neighbor_level >= -1,
+             ExcMessage("The neighbor level must be -1 (for a cell at the "
+                        "boundary) or a nonnegative number."));
+      Assert(neighbor_level < int(numbers::max_n_levels), ExcInternalError());
+      Assert(neighbor_index >= -1,
+             ExcMessage("The neighbor index must be -1 (for a cell at the "
+                        "boundary) or a nonnegative number."));
+      const std::size_t i = index * faces_per_object + face_no;
+      AssertIndexRange(i, neighbor_levels.size());
+      AssertIndexRange(i, neighbor_indices.size());
+      neighbor_levels[i]  = neighbor_level;
+      neighbor_indices[i] = neighbor_index;
+    }
+
+
+
+    template <int dim, int spacedim>
+    inline void
+    TriaLevel<dim, spacedim>::set_cached_vertex_index(
+      const int          index,
+      const unsigned int vertex_no,
+      const unsigned int vertex_index)
+    {
+      Assert(index >= 0, ExcInternalError());
+      AssertIndexRange(vertex_no, vertices_per_object);
+      const std::size_t i =
+        std::size_t(index) * vertices_per_object + vertex_no;
+      AssertIndexRange(i, cell_vertex_indices_cache.size());
+      cell_vertex_indices_cache[i] = vertex_index;
+    }
+
+
+
+    template <int dim, int spacedim>
+    inline unsigned int
+    TriaLevel<dim, spacedim>::cached_vertex_index(
+      const int          index,
+      const unsigned int vertex_no) const
+    {
+      Assert(index >= 0, ExcInternalError());
+      AssertIndexRange(vertex_no, vertices_per_object);
+      const std::size_t i =
+        std::size_t(index) * vertices_per_object + vertex_no;
+      AssertIndexRange(i, cell_vertex_indices_cache.size());
+      return cell_vertex_indices_cache[i];
+    }
+
+
+
+    template <int dim, int spacedim>
+    template <class Archive>
+    void
+    TriaLevel<dim, spacedim>::serialize(Archive &ar, const unsigned int)
+    {
+      ar &refine_flags &coarsen_flags;
+
+      ar &children_per_object;
+      ar &faces_per_object;
+      ar &vertices_per_object;
+
+      // do not serialize `active_cell_indices` and `vertex_indices_cache`
+      // here. instead of storing them to the stream and re-reading them again
+      // later, we just rebuild them in Triangulation::load()
+
+      ar &neighbor_levels;
+      ar &neighbor_indices;
+      ar &subdomain_ids;
+      ar &level_subdomain_ids;
+      ar &parents;
+      ar &direction_flags;
+      ar &cells;
+      ar &face_orientations;
+      ar &reference_cell;
+
+      // we do need to resize them so they can be populated in the other
+      // functions though.
+      if (cell_vertex_indices_cache.size() !=
+          refine_flags.size() * vertices_per_object)
+        {
+          cell_vertex_indices_cache.assign(refine_flags.size() *
+                                             vertices_per_object,
+                                           numbers::invalid_unsigned_int);
+          active_cell_indices.assign(refine_flags.size(),
+                                     numbers::invalid_unsigned_int);
+          global_active_cell_indices.assign(refine_flags.size(),
+                                            numbers::invalid_coarse_cell_id);
+          global_level_cell_indices.assign(refine_flags.size(),
+                                           numbers::invalid_coarse_cell_id);
+        }
+    }
+
+  } // namespace TriangulationImplementation
+} // namespace internal
+
+DEAL_II_NAMESPACE_CLOSE
+
+#endif

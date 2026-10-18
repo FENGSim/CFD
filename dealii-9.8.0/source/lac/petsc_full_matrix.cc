@@ -1,0 +1,73 @@
+// -----------------------------------------------------------------------------
+//
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception OR LGPL-2.1-or-later
+// Copyright (C) 2004 - 2026 by the deal.II authors
+//
+// This file is part of the deal.II library.
+//
+// Detailed license information governing the source code and contributions
+// can be found in LICENSE.md and CONTRIBUTING.md at the top level directory.
+//
+// -----------------------------------------------------------------------------
+
+#include <deal.II/lac/petsc_full_matrix.h>
+
+#ifdef DEAL_II_WITH_PETSC
+
+#  include <deal.II/lac/exceptions.h>
+#  include <deal.II/lac/petsc_compatibility.h>
+
+
+#endif // DEAL_II_WITH_PETSC
+
+DEAL_II_NAMESPACE_OPEN
+
+#ifdef DEAL_II_WITH_PETSC
+
+namespace PETScWrappers
+{
+  FullMatrix::FullMatrix()
+  {
+    // empty constructor generate an empty matrix
+    do_reinit(0, 0);
+  }
+
+  FullMatrix::FullMatrix(const size_type m, const size_type n)
+  {
+    do_reinit(m, n);
+  }
+
+  void
+  FullMatrix::reinit(const size_type m, const size_type n)
+  {
+    // get rid of old matrix and generate a
+    // new one
+    const PetscErrorCode ierr = MatDestroy(&matrix);
+    AssertThrow(ierr == 0, ExcPETScError(ierr));
+
+    do_reinit(m, n);
+  }
+
+  void
+  FullMatrix::do_reinit(const size_type m, const size_type n)
+  {
+    // use the call sequence indicating only a maximal number of
+    // elements per row for all rows globally
+    const PetscErrorCode ierr =
+      MatCreateSeqDense(PETSC_COMM_SELF, m, n, nullptr, &matrix);
+    AssertThrow(ierr == 0, ExcPETScError(ierr));
+  }
+
+  FullMatrix &
+  FullMatrix::operator=(const value_type d)
+  {
+    MatrixBase::operator=(d);
+    return *this;
+  }
+
+} // namespace PETScWrappers
+
+
+
+#endif // DEAL_II_WITH_PETSC
+DEAL_II_NAMESPACE_CLOSE

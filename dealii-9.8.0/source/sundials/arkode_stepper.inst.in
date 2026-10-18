@@ -1,0 +1,63 @@
+// ------------------------------------------------------------------------
+//
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// Copyright (C) 2026 by the deal.II authors
+//
+// This file is part of the deal.II library.
+//
+// Part of the source code is dual licensed under Apache-2.0 WITH
+// LLVM-exception OR LGPL-2.1-or-later. Detailed license information
+// governing the source code and code contributions can be found in
+// LICENSE.md and CONTRIBUTING.md at the top level directory of deal.II.
+//
+// ------------------------------------------------------------------------
+
+// serial Vector and BlockVector
+for (S : REAL_SCALARS; V : DEAL_II_VEC_TEMPLATES)
+  {
+    template class SUNDIALS::ARKStepper<V<S>>;
+    template class SUNDIALS::ERKStepper<V<S>>;
+#if DEAL_II_SUNDIALS_VERSION_GTE(7, 2, 0)
+    template class SUNDIALS::LSRKStepperSTS<V<S>>;
+    template class SUNDIALS::LSRKStepperSSP<V<S>>;
+#endif
+  }
+
+// parallel Vector and BlockVector
+for (S : REAL_SCALARS; V : DEAL_II_VEC_TEMPLATES)
+  {
+    template class SUNDIALS::ARKStepper<LinearAlgebra::distributed::V<S>>;
+    template class SUNDIALS::ERKStepper<LinearAlgebra::distributed::V<S>>;
+#if DEAL_II_SUNDIALS_VERSION_GTE(7, 2, 0)
+    template class SUNDIALS::LSRKStepperSTS<LinearAlgebra::distributed::V<S>>;
+    template class SUNDIALS::LSRKStepperSSP<LinearAlgebra::distributed::V<S>>;
+#endif
+  }
+
+#if defined(DEAL_II_WITH_MPI) && defined(DEAL_II_WITH_TRILINOS)
+// TrilinosWrappers Vector and BlockVector
+for (V : DEAL_II_VEC_TEMPLATES)
+  {
+    template class SUNDIALS::ARKStepper<TrilinosWrappers::MPI::V>;
+    template class SUNDIALS::ERKStepper<TrilinosWrappers::MPI::V>;
+#  if DEAL_II_SUNDIALS_VERSION_GTE(7, 2, 0)
+    template class SUNDIALS::LSRKStepperSTS<TrilinosWrappers::MPI::V>;
+    template class SUNDIALS::LSRKStepperSSP<TrilinosWrappers::MPI::V>;
+#  endif
+  }
+#endif
+
+#if defined(DEAL_II_WITH_MPI) && defined(DEAL_II_WITH_PETSC)
+#  ifndef DEAL_II_PETSC_WITH_COMPLEX
+// PETScWrappers Vector and BlockVector
+for (V : DEAL_II_VEC_TEMPLATES)
+  {
+    template class SUNDIALS::ARKStepper<PETScWrappers::MPI::V>;
+    template class SUNDIALS::ERKStepper<PETScWrappers::MPI::V>;
+#    if DEAL_II_SUNDIALS_VERSION_GTE(7, 2, 0)
+    template class SUNDIALS::LSRKStepperSTS<PETScWrappers::MPI::V>;
+    template class SUNDIALS::LSRKStepperSSP<PETScWrappers::MPI::V>;
+#    endif
+  }
+#  endif
+#endif

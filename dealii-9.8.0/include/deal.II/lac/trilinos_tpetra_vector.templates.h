@@ -1,0 +1,1698 @@
+// -----------------------------------------------------------------------------
+//
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception OR LGPL-2.1-or-later
+// Copyright (C) 2018 - 2026 by the deal.II authors
+//
+// This file is part of the deal.II library.
+//
+// Detailed license information governing the source code and contributions
+// can be found in LICENSE.md and CONTRIBUTING.md at the top level directory.
+//
+// -----------------------------------------------------------------------------
+
+#ifndef dealii_trilinos_tpetra_vector_templates_h
+#define dealii_trilinos_tpetra_vector_templates_h
+
+#include <deal.II/base/config.h>
+
+#include <deal.II/base/mpi.h>
+
+#include <deal.II/lac/trilinos_tpetra_vector.h>
+
+#ifdef DEAL_II_TRILINOS_WITH_TPETRA
+
+#  include <deal.II/base/index_set.h>
+#  include <deal.II/base/trilinos_utilities.h>
+
+#  include <deal.II/lac/read_write_vector.h>
+
+#  include <boost/io/ios_state.hpp>
+
+#  include <Teuchos_DefaultMpiComm.hpp>
+#  include <Tpetra_Import_def.hpp>
+#  include <Tpetra_Map_def.hpp>
+
+#  include <memory>
+
+#endif
+
+DEAL_II_NAMESPACE_OPEN
+
+#ifdef DEAL_II_TRILINOS_WITH_TPETRA
+namespace LinearAlgebra
+{
+  namespace TpetraWrappers
+  {
+    namespace internal
+    {
+      template <typename Number, typename MemorySpace>
+      VectorReference<Number, MemorySpace>::operator Number() const
+      {
+        // Get the local index
+        const TrilinosWrappers::types::int_type local_index =
+          vector.vector->getMap()->getLocalElement(
+            static_cast<TrilinosWrappers::types::int_type>(index));
+
+#  if DEAL_II_TRILINOS_VERSION_GTE(14, 0, 0)
+        Assert(
+          (local_index != Teuchos::OrdinalTraits<int>::invalid()),
+          (typename Vector<Number, MemorySpace>::ExcAccessToNonLocalElement(
+            index,
+            vector.vector->getMap()->getLocalNumElements(),
+            vector.vector->getMap()->getMinLocalIndex(),
+            vector.vector->getMap()->getMaxLocalIndex())));
+#  else
+        Assert(
+          (local_index != Teuchos::OrdinalTraits<int>::invalid()),
+          (typename Vector<Number, MemorySpace>::ExcAccessToNonLocalElement(
+            index,
+            vector.vector->getMap()->getNodeNumElements(),
+            vector.vector->getMap()->getMinLocalIndex(),
+            vector.vector->getMap()->getMaxLocalIndex())));
+#  endif
+        return vector.vector->getData()[local_index];
+      }
+    } // namespace internal
+
+
+
+    template <typename Number, typename MemorySpace>
+    Vector<Number, MemorySpace>::Vector()
+      : compressed(true)
+      , has_ghost(false)
+      , last_action(VectorOperation::unknown)
+      , vector(Utilities::Trilinos::internal::make_rcp<
+               TpetraTypes::VectorType<Number, MemorySpace>>(
+          Utilities::Trilinos::internal::make_rcp<TpetraTypes::MapType<
+            MemorySpace>>(0, 0, Utilities::Trilinos::tpetra_comm_self())))
+    {}
+
+
+
+    template <typename Number, typename MemorySpace>
+    Vector<Number, MemorySpace>::Vector(const Vector<Number, MemorySpace> &V)
+      : compressed(V.compressed)
+      , has_ghost(V.has_ghost)
+      , last_action(V.last_action)
+      , vector(Utilities::Trilinos::internal::make_rcp<
+               TpetraTypes::VectorType<Number, MemorySpace>>(*V.vector,
+                                                             Teuchos::Copy))
+    {
+      if (!V.nonlocal_vector.is_null())
+        {
+          nonlocal_vector = Utilities::Trilinos::internal::make_rcp<
+            TpetraTypes::VectorType<Number, MemorySpace>>(*V.nonlocal_vector,
+                                                          Teuchos::Copy);
+        }
+      source_stored_elements  = V.source_stored_elements;
+      local_entries           = V.local_entries;
+      nonlocal_cached_indices = V.nonlocal_cached_indices;
+      nonlocal_cached_values  = V.nonlocal_cached_values;
+      tpetra_comm_pattern     = V.tpetra_comm_pattern;
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    Vector<Number, MemorySpace>::Vector(
+      const Teuchos::RCP<TpetraTypes::VectorType<Number, MemorySpace>> V)
+      : compressed(true)
+      , has_ghost(V->getMap()->isOneToOne() == false)
+      , last_action(VectorOperation::unknown)
+      , vector(V)
+    {
+      // If there are ghost entries, we do not know which process owns which
+      // entries. Assume no one owns any entries, which will allow read access,
+      // but no write access.
+      if (has_ghost)
+        local_entries = IndexSet(vector->getGlobalLength());
+      else
+        local_entries = IndexSet(vector->getMap());
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    Vector<Number, MemorySpace>::Vector(const IndexSet &parallel_partitioner,
+                                        const MPI_Comm  communicator)
+      : compressed(true)
+      , has_ghost(false)
+      , last_action(VectorOperation::unknown)
+      , vector(Utilities::Trilinos::internal::make_rcp<
+               TpetraTypes::VectorType<Number, MemorySpace>>(
+          parallel_partitioner.make_tpetra_map_rcp<
+            TpetraTypes::NodeType<MemorySpace>>(communicator, true)))
+      , local_entries(parallel_partitioner)
+    {}
+
+
+
+    template <typename Number, typename MemorySpace>
+    Vector<Number, MemorySpace>::Vector(const IndexSet &locally_owned_entries,
+                                        const IndexSet &ghost_entries,
+                                        const MPI_Comm  communicator,
+                                        const bool      vector_writable)
+      : last_action(VectorOperation::unknown)
+    {
+      local_entries = locally_owned_entries;
+      compressed    = true;
+
+      if (!vector_writable)
+        {
+          IndexSet parallel_partitioner = locally_owned_entries;
+          parallel_partitioner.add_indices(ghost_entries);
+
+          vector = Utilities::Trilinos::internal::make_rcp<
+            TpetraTypes::VectorType<Number, MemorySpace>>(
+            parallel_partitioner
+              .template make_tpetra_map_rcp<TpetraTypes::NodeType<MemorySpace>>(
+                communicator, true));
+        }
+      else
+        {
+          Teuchos::RCP<TpetraTypes::MapType<MemorySpace>> map =
+            locally_owned_entries
+              .template make_tpetra_map_rcp<TpetraTypes::NodeType<MemorySpace>>(
+                communicator, false);
+          vector = Utilities::Trilinos::internal::make_rcp<
+            TpetraTypes::VectorType<Number, MemorySpace>>(map);
+
+          IndexSet nonlocal_entries = ghost_entries;
+          nonlocal_entries.subtract_set(locally_owned_entries);
+          nonlocal_vector = Utilities::Trilinos::internal::make_rcp<
+            TpetraTypes::VectorType<Number, MemorySpace>>(
+            nonlocal_entries
+              .template make_tpetra_map_rcp<TpetraTypes::NodeType<MemorySpace>>(
+                communicator, true));
+        }
+
+      has_ghost = (vector->getMap()->isOneToOne() == false);
+
+      if constexpr (running_in_debug_mode())
+        {
+          MPI_Comm comm = Utilities::Trilinos::teuchos_comm_to_mpi_comm(
+            vector->getMap()->getComm());
+          const size_type n_elements_global =
+            Utilities::MPI::sum(vector->getLocalLength(), comm);
+          Assert(has_ghost || n_elements_global == size(), ExcInternalError());
+        }
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    void
+    Vector<Number, MemorySpace>::clear()
+    {
+      vector = Utilities::Trilinos::internal::make_rcp<
+        TpetraTypes::VectorType<Number, MemorySpace>>(
+        Utilities::Trilinos::internal::make_rcp<
+          TpetraTypes::MapType<MemorySpace>>(
+          0, 0, Utilities::Trilinos::tpetra_comm_self()));
+      vector_1d_view.reset();
+
+      has_ghost   = false;
+      compressed  = true;
+      last_action = VectorOperation::unknown;
+
+      nonlocal_vector.reset();
+      nonlocal_vector_1d_view.reset();
+
+      source_stored_elements.clear();
+      local_entries.clear();
+      local_entries.set_size(0);
+      nonlocal_cached_indices.clear();
+      nonlocal_cached_values.clear();
+      tpetra_comm_pattern = Teuchos::null;
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    void
+    Vector<Number, MemorySpace>::reinit(const IndexSet &parallel_partitioner,
+                                        const MPI_Comm  communicator,
+                                        const bool /*omit_zeroing_entries*/)
+    {
+      vector.reset();
+      vector_1d_view.reset();
+      nonlocal_vector.reset();
+      nonlocal_vector_1d_view.reset();
+      source_stored_elements.clear();
+      nonlocal_cached_indices.clear();
+      nonlocal_cached_values.clear();
+      tpetra_comm_pattern = Teuchos::null;
+
+      compressed    = true;
+      has_ghost     = false;
+      last_action   = VectorOperation::unknown;
+      local_entries = parallel_partitioner;
+      vector        = Utilities::Trilinos::internal::make_rcp<
+        TpetraTypes::VectorType<Number, MemorySpace>>(
+        parallel_partitioner
+          .template make_tpetra_map_rcp<TpetraTypes::NodeType<MemorySpace>>(
+            communicator, true));
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    void
+    Vector<Number, MemorySpace>::reinit(const IndexSet &locally_owned_entries,
+                                        const IndexSet &ghost_entries,
+                                        const MPI_Comm  communicator,
+                                        const bool      vector_writable)
+    {
+      // release memory before reallocation
+      vector_1d_view.reset();
+      nonlocal_vector.reset();
+      nonlocal_vector_1d_view.reset();
+      source_stored_elements.clear();
+      nonlocal_cached_indices.clear();
+      nonlocal_cached_values.clear();
+      tpetra_comm_pattern = Teuchos::null;
+
+      local_entries = locally_owned_entries;
+
+      if (!vector_writable)
+        {
+          vector.reset();
+
+          IndexSet parallel_partitioner = locally_owned_entries;
+          parallel_partitioner.add_indices(ghost_entries);
+
+          vector = Utilities::Trilinos::internal::make_rcp<
+            TpetraTypes::VectorType<Number, MemorySpace>>(
+            parallel_partitioner
+              .template make_tpetra_map_rcp<TpetraTypes::NodeType<MemorySpace>>(
+                communicator, true));
+        }
+      else
+        {
+          Teuchos::RCP<TpetraTypes::MapType<MemorySpace>> map =
+            locally_owned_entries
+              .template make_tpetra_map_rcp<TpetraTypes::NodeType<MemorySpace>>(
+                communicator, false);
+
+          if (!vector->getMap()->isSameAs(*map))
+            {
+              vector.reset();
+              vector = Utilities::Trilinos::internal::make_rcp<
+                TpetraTypes::VectorType<Number, MemorySpace>>(map);
+            }
+          else
+            vector->putScalar(0);
+
+          IndexSet nonlocal_entries = ghost_entries;
+          nonlocal_entries.subtract_set(locally_owned_entries);
+
+          nonlocal_vector = Utilities::Trilinos::internal::make_rcp<
+            TpetraTypes::VectorType<Number, MemorySpace>>(
+            nonlocal_entries
+              .template make_tpetra_map_rcp<TpetraTypes::NodeType<MemorySpace>>(
+                communicator, true));
+        }
+
+      has_ghost   = (vector->getMap()->isOneToOne() == false);
+      compressed  = true;
+      last_action = VectorOperation::unknown;
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    void
+    Vector<Number, MemorySpace>::reinit(const Vector<Number, MemorySpace> &V,
+                                        const bool omit_zeroing_entries)
+    {
+      // Preserve the source vector's storage layout, including ghosted
+      // read-only vectors and writable vectors with a separate nonlocal
+      // accumulation buffer.
+      const bool same_vector_map =
+        vector.get() != nullptr && V.vector.get() != nullptr &&
+        vector->getMap()->isSameAs(*V.vector->getMap());
+
+      // Reset the cached views, because the vector should be in a state
+      // just like after calling compress()
+      vector_1d_view.reset();
+      nonlocal_vector_1d_view.reset();
+
+      // If V has a different distribution, construct a new vector,
+      // otherwise just zero out this vector if so requested.
+      if (!same_vector_map)
+        {
+          vector = Utilities::Trilinos::internal::make_rcp<
+            TpetraTypes::VectorType<Number, MemorySpace>>(V.vector->getMap());
+        }
+      else if (vector.get() != nullptr && omit_zeroing_entries == false)
+        vector->putScalar(Number(0));
+
+      const bool same_nonlocal_map =
+        (nonlocal_vector.get() == nullptr &&
+         V.nonlocal_vector.get() == nullptr) ||
+        (nonlocal_vector.get() != nullptr &&
+         V.nonlocal_vector.get() != nullptr &&
+         nonlocal_vector->getMap()->isSameAs(*V.nonlocal_vector->getMap()));
+
+      // If V has a different distribution of nonlocal entries,
+      // modify our nonlocal entries to be identical. Otherwise,
+      // just zero out our nonlocal vector if so requested.
+      if (!same_nonlocal_map)
+        {
+          if (V.nonlocal_vector.get() != nullptr)
+            {
+              nonlocal_vector = Utilities::Trilinos::internal::make_rcp<
+                TpetraTypes::VectorType<Number, MemorySpace>>(
+                V.nonlocal_vector->getMap());
+            }
+          else
+            {
+              nonlocal_vector.reset();
+            }
+        }
+      else if (nonlocal_vector.get() != nullptr &&
+               omit_zeroing_entries == false)
+        nonlocal_vector->putScalar(Number(0));
+
+      nonlocal_cached_indices.clear();
+      nonlocal_cached_values.clear();
+      has_ghost     = V.has_ghost;
+      local_entries = V.local_entries;
+      compressed    = true;
+      last_action   = VectorOperation::unknown;
+
+      // Cached import state depends on previous source layouts and should
+      // not survive reinitialization.
+      source_stored_elements.clear();
+      tpetra_comm_pattern = Teuchos::null;
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    void
+    Vector<Number, MemorySpace>::extract_subvector_to(
+      const ArrayView<const types::global_dof_index> &indices,
+      const ArrayView<Number>                        &elements) const
+    {
+      AssertDimension(indices.size(), elements.size());
+
+      // Create a non-owning pointer to the vector map. This way we avoid thread
+      // safety problems with owning pointers.
+      Teuchos::Ptr<
+        const typename TpetraTypes::VectorType<Number, MemorySpace>::map_type>
+        vector_map;
+      {
+#  ifndef HAVE_TEUCHOS_THREAD_SAFE
+        // Make this part of the function thread safe
+        std::scoped_lock lock(mutex);
+#  endif
+
+        vector_map = vector->getMap().ptr();
+
+        // Make sure we have a view available to access the vector entries.
+        if (!vector_1d_view)
+          {
+            auto vector_2d_view =
+              vector->template getLocalView<Kokkos::HostSpace>(
+                Tpetra::Access::ReadWriteStruct{});
+
+            vector_1d_view = Kokkos::subview(vector_2d_view, Kokkos::ALL(), 0);
+          }
+      }
+
+      for (unsigned int i = 0; i < indices.size(); ++i)
+        {
+          AssertIndexRange(indices[i], vector_map->getGlobalNumElements());
+          const size_type                   row = indices[i];
+          TrilinosWrappers::types::int_type local_row =
+            vector_map->getLocalElement(row);
+
+
+#  if DEAL_II_TRILINOS_VERSION_GTE(14, 0, 0)
+          Assert(local_row != Teuchos::OrdinalTraits<int>::invalid(),
+                 ExcAccessToNonLocalElement(row,
+                                            vector_map->getLocalNumElements(),
+                                            vector_map->getMinLocalIndex(),
+                                            vector_map->getMaxLocalIndex()));
+#  else
+          Assert(local_row != Teuchos::OrdinalTraits<int>::invalid(),
+                 ExcAccessToNonLocalElement(row,
+                                            vector_map->getNodeNumElements(),
+                                            vector_map->getMinLocalIndex(),
+                                            vector_map->getMaxLocalIndex()));
+
+#  endif
+
+          if (local_row != Teuchos::OrdinalTraits<int>::invalid())
+            elements[i] = (*vector_1d_view)(local_row);
+        }
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    Vector<Number, MemorySpace> &
+    Vector<Number, MemorySpace>::operator=(const Vector<Number, MemorySpace> &V)
+    {
+      // Distinguish three cases:
+      //  - First case: both vectors have the same layout.
+      //  - Second case: both vectors have the same size but different layout.
+      //  - Third case: the vectors have different size.
+
+      AssertThrow(V.compressed,
+                  ExcMessage("Cannot copy-assign from a vector that has not "
+                             "been compressed. Please call compress() on the "
+                             "source vector before using operator=()."));
+
+      // Reset our cached vector views so that trilinos operations on device do
+      // not detect an existing host view.
+      vector_1d_view.reset();
+      nonlocal_vector_1d_view.reset();
+
+      if (vector->getMap()->isSameAs(*V.vector->getMap()))
+        {
+          // Create a writable view of this vector
+          auto vector_2d_view =
+            vector->template getLocalView<Kokkos::HostSpace>(
+              Tpetra::Access::ReadWriteStruct{});
+
+          vector_1d_view = Kokkos::subview(vector_2d_view, Kokkos::ALL(), 0);
+
+          // Create a read-only Kokkos view of the source vector
+          auto source_vector_2d =
+            V.vector->template getLocalView<Kokkos::HostSpace>(
+              Tpetra::Access::ReadOnlyStruct{});
+
+          auto source_vector_1d_view =
+            Kokkos::subview(source_vector_2d, Kokkos::ALL(), 0);
+
+          // Copy the data
+          Kokkos::deep_copy((*vector_1d_view), source_vector_1d_view);
+
+          // Reset the local view again as if we had called compress()
+          vector_1d_view.reset();
+        }
+      else if (size() == V.size())
+        {
+          // We expect that at least one vector has a one-to-one map, otherwise
+          // we can neither call Import nor Export.
+          if (V.vector->getMap()->isOneToOne())
+            {
+              Teuchos::RCP<const TpetraTypes::ImportType<MemorySpace>>
+                importer =
+                  Tpetra::createImport(V.vector->getMap(), vector->getMap());
+
+              // Since we are distributing the vector from a one-to-one map
+              // we can always use the VectorOperation::insert / Tpetra::INSERT
+              // here.
+              vector->doImport(*V.vector, *importer, Tpetra::INSERT);
+            }
+          else if (vector->getMap()->isOneToOne())
+            {
+              Teuchos::RCP<const TpetraTypes::ExportType<MemorySpace>>
+                exporter =
+                  Tpetra::createExport(V.vector->getMap(), vector->getMap());
+
+              vector->doExport(*V.vector, *exporter, Tpetra::INSERT);
+            }
+          else
+            {
+              Assert(false,
+                     ExcMessage(
+                       "You are trying to map one vector distributed "
+                       "between processors, where some elements belong "
+                       "to multiple processors, onto another distribution "
+                       "pattern, where some elements belong to multiple "
+                       "processors. It is unclear how to deal with elements "
+                       "in the vector belonging to multiple processors. "
+                       "Therefore, compress() must be called on this "
+                       "vector first."));
+            }
+        }
+      else
+        {
+          vector.reset();
+          vector = Utilities::Trilinos::internal::make_rcp<
+            TpetraTypes::VectorType<Number, MemorySpace>>(*V.vector,
+                                                          Teuchos::Copy);
+
+          nonlocal_vector.reset();
+
+          if (!V.nonlocal_vector.is_null())
+            {
+              nonlocal_vector = Utilities::Trilinos::internal::make_rcp<
+                TpetraTypes::VectorType<Number, MemorySpace>>(
+                *V.nonlocal_vector, Teuchos::Copy);
+            }
+
+          compressed             = V.compressed;
+          has_ghost              = V.has_ghost;
+          source_stored_elements = V.source_stored_elements;
+          tpetra_comm_pattern    = V.tpetra_comm_pattern;
+          local_entries          = V.local_entries;
+        }
+
+      // Because V is compressed and has no pending changes
+      // clear our local cache as well.
+      if (!nonlocal_vector.is_null())
+        nonlocal_vector->putScalar(Number(0));
+      nonlocal_cached_indices.clear();
+      nonlocal_cached_values.clear();
+      source_stored_elements.clear();
+      tpetra_comm_pattern = Teuchos::null;
+      compressed          = true;
+      last_action         = VectorOperation::unknown;
+
+      return *this;
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    template <typename OtherNumber>
+    Vector<Number, MemorySpace> &
+    Vector<Number, MemorySpace>::operator=(const dealii::Vector<OtherNumber> &V)
+    {
+      vector.reset();
+      vector_1d_view.reset();
+
+      nonlocal_vector.reset();
+      nonlocal_vector_1d_view.reset();
+      nonlocal_cached_indices.clear();
+      nonlocal_cached_values.clear();
+
+      Teuchos::Array<Number> vector_data(V.begin(), V.end());
+      vector = Utilities::Trilinos::internal::make_rcp<
+        TpetraTypes::VectorType<Number, MemorySpace>>(
+        V.locally_owned_elements()
+          .template make_tpetra_map_rcp<TpetraTypes::NodeType<MemorySpace>>(),
+        vector_data);
+
+      local_entries = V.locally_owned_elements();
+
+      source_stored_elements.clear();
+      tpetra_comm_pattern = Teuchos::null;
+      has_ghost           = false;
+      compressed          = true;
+      last_action         = VectorOperation::unknown;
+
+      return *this;
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    Vector<Number, MemorySpace> &
+    Vector<Number, MemorySpace>::operator=(const Number s)
+    {
+      if (s != Number(0))
+        Assert(!has_ghost_elements(), ExcGhostsPresent());
+      AssertIsFinite(s);
+
+      // Reset our cached vector views so that trilinos operations on device do
+      // not detect an existing host view.
+      vector_1d_view.reset();
+      nonlocal_vector_1d_view.reset();
+
+      // First set the elements of the locally owned part of
+      // the vector to 's':
+      vector->putScalar(s);
+
+      // If the vector has ghost elements, then the assertion
+      // above checks that s==0. In that case, we're simply
+      // zeroing out the entire vector and need to also do
+      // that for the ghost entries of the vector.
+      if (!nonlocal_vector.is_null())
+        nonlocal_vector->putScalar(Number(0));
+
+      last_action = VectorOperation::unknown;
+
+      return *this;
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    void
+    Vector<Number, MemorySpace>::import_elements(
+      const ReadWriteVector<Number> &V,
+      VectorOperation::values        operation,
+      const Teuchos::RCP<const Utilities::MPI::CommunicationPatternBase>
+        &communication_pattern)
+    {
+      // Reset our cached vector view so that trilinos operations on device do
+      // not detect an existing host view.
+      vector_1d_view.reset();
+
+      // If no communication pattern is given, create one. Otherwise, use the
+      // one given.
+      if (communication_pattern.is_null())
+        {
+          // The first time import is called, a communication pattern is
+          // created. Check if the communication pattern already exists and if
+          // it can be reused.
+          if ((source_stored_elements.size() !=
+               V.get_stored_elements().size()) ||
+              (source_stored_elements != V.get_stored_elements()))
+            {
+              create_tpetra_comm_pattern(
+                V.get_stored_elements(),
+                Utilities::Trilinos::teuchos_comm_to_mpi_comm(
+                  vector->getMap()->getComm()));
+            }
+        }
+      else
+        {
+          tpetra_comm_pattern = Teuchos::rcp_dynamic_cast<
+            const TpetraWrappers::CommunicationPattern<MemorySpace>>(
+            communication_pattern);
+
+          AssertThrow(
+            !tpetra_comm_pattern.is_null(),
+            ExcMessage("The communication pattern is not of type "
+                       "LinearAlgebra::TpetraWrappers::CommunicationPattern."));
+        }
+
+      Teuchos::RCP<const TpetraTypes::ExportType<MemorySpace>> tpetra_export =
+        tpetra_comm_pattern->get_tpetra_export_rcp();
+
+      TpetraTypes::VectorType<Number, MemorySpace> source_vector(
+        tpetra_export->getSourceMap());
+
+      {
+        auto source_vector_2d_view =
+          source_vector.template getLocalView<Kokkos::HostSpace>(
+            Tpetra::Access::ReadWriteStruct{});
+        auto source_vector_1d_view =
+          Kokkos::subview(source_vector_2d_view, Kokkos::ALL(), 0);
+
+        const size_t localLength = source_vector.getLocalLength();
+        auto         values_it   = V.begin();
+        for (size_t k = 0; k < localLength; ++k)
+          source_vector_1d_view(k) = *values_it++;
+      }
+      Tpetra::CombineMode tpetra_operation = Tpetra::ZERO;
+      if (operation == VectorOperation::insert)
+        tpetra_operation = Tpetra::INSERT;
+      else if (operation == VectorOperation::add)
+        tpetra_operation = Tpetra::ADD;
+      else
+        DEAL_II_NOT_IMPLEMENTED();
+
+      vector->doExport(source_vector, *tpetra_export, tpetra_operation);
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    void
+    Vector<Number, MemorySpace>::import_elements(
+      const ReadWriteVector<Number> &V,
+      VectorOperation::values        operation)
+    {
+      // Create an empty CommunicationPattern
+      const Teuchos::RCP<const Utilities::MPI::CommunicationPatternBase>
+        communication_pattern_empty;
+
+      import_elements(V, operation, communication_pattern_empty);
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    Vector<Number, MemorySpace> &
+    Vector<Number, MemorySpace>::operator*=(const Number factor)
+    {
+      Assert(!has_ghost_elements(), ExcGhostsPresent());
+      AssertIsFinite(factor);
+
+      // Reset our cached vector view so that trilinos operations on device do
+      // not detect an existing host view.
+      vector_1d_view.reset();
+
+      vector->scale(factor);
+
+      return *this;
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    Vector<Number, MemorySpace> &
+    Vector<Number, MemorySpace>::operator/=(const Number factor)
+    {
+      Assert(!has_ghost_elements(), ExcGhostsPresent());
+      AssertIsFinite(factor);
+      Assert(factor != Number(0.), ExcZero());
+
+      // Reset our cached vector view so that trilinos operations on device do
+      // not detect an existing host view.
+      vector_1d_view.reset();
+
+      *this *= Number(1.) / factor;
+
+      return *this;
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    Vector<Number, MemorySpace> &
+    Vector<Number, MemorySpace>::operator+=(
+      const Vector<Number, MemorySpace> &V)
+    {
+      Assert(this->size() == V.size(),
+             ExcDimensionMismatch(this->size(), V.size()));
+      Assert(!has_ghost_elements(), ExcGhostsPresent());
+
+      // Reset our cached vector view so that trilinos operations on device do
+      // not detect an existing host view.
+      vector_1d_view.reset();
+
+      // If the maps are the same we can update right away.
+      if (vector->getMap()->isSameAs(*(V.trilinos_vector().getMap())))
+        {
+          vector->update(1., V.trilinos_vector(), 1.);
+        }
+      else
+        {
+          // TODO: Tpetra doesn't have a combine mode that also updates local
+          // elements, maybe there is a better workaround.
+          Tpetra::Vector<Number,
+                         int,
+                         types::signed_global_dof_index,
+                         TpetraTypes::NodeType<MemorySpace>>
+                                               dummy(vector->getMap(), false);
+          TpetraTypes::ImportType<MemorySpace> data_exchange(
+            V.trilinos_vector().getMap(), dummy.getMap());
+          dummy.doImport(V.trilinos_vector(), data_exchange, Tpetra::INSERT);
+
+          vector->update(1.0, dummy, 1.0);
+        }
+
+      return *this;
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    Vector<Number, MemorySpace> &
+    Vector<Number, MemorySpace>::operator-=(
+      const Vector<Number, MemorySpace> &V)
+    {
+      Assert(!has_ghost_elements(), ExcGhostsPresent());
+
+      // Reset our cached vector view so that trilinos operations on device do
+      // not detect an existing host view.
+      vector_1d_view.reset();
+
+      this->add(-1., V);
+
+      return *this;
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    Number
+    Vector<Number, MemorySpace>::operator*(
+      const Vector<Number, MemorySpace> &V) const
+    {
+      Assert(this->size() == V.size(),
+             ExcDimensionMismatch(this->size(), V.size()));
+      Assert(vector->getMap()->isSameAs(*V.trilinos_vector().getMap()),
+             ExcDifferentParallelPartitioning());
+      Assert(!has_ghost_elements(), ExcGhostsPresent());
+
+      // Reset our cached vector view so that trilinos operations on device do
+      // not detect an existing host view.
+      vector_1d_view.reset();
+
+      return vector->dot(V.trilinos_vector());
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    Number
+    Vector<Number, MemorySpace>::operator()(const size_type index) const
+    {
+#  ifndef HAVE_TEUCHOS_THREAD_SAFE
+      // Make this part of the function thread safe
+      std::scoped_lock lock(mutex);
+#  endif
+
+      // Get the local index
+      const TrilinosWrappers::types::int_type local_index =
+        vector->getMap()->getLocalElement(
+          static_cast<TrilinosWrappers::types::int_type>(index));
+
+// If the element is not present on the current processor, we can't
+// continue. This is the main difference to the el() function.
+#  if DEAL_II_TRILINOS_VERSION_GTE(14, 0, 0)
+      Assert(local_index != Teuchos::OrdinalTraits<int>::invalid(),
+             ExcAccessToNonLocalElement(index,
+                                        vector->getMap()->getLocalNumElements(),
+                                        vector->getMap()->getMinLocalIndex(),
+                                        vector->getMap()->getMaxLocalIndex()));
+#  else
+      Assert(local_index != Teuchos::OrdinalTraits<int>::invalid(),
+             ExcAccessToNonLocalElement(index,
+                                        vector->getMap()->getNodeNumElements(),
+                                        vector->getMap()->getMinLocalIndex(),
+                                        vector->getMap()->getMaxLocalIndex()));
+#  endif
+
+      // Make sure we have a view available to access the vector entries.
+      if (!vector_1d_view)
+        {
+          auto vector_2d_view =
+            vector->template getLocalView<Kokkos::HostSpace>(
+              Tpetra::Access::ReadWriteStruct{});
+
+          vector_1d_view = Kokkos::subview(vector_2d_view, Kokkos::ALL(), 0);
+        }
+
+      return (*vector_1d_view)[local_index];
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    void
+    Vector<Number, MemorySpace>::add(const Number a)
+    {
+      AssertIsFinite(a);
+
+      // if we have ghost values, do not allow
+      // writing to this vector at all.
+      Assert(!has_ghost_elements(), ExcGhostsPresent());
+
+      // Make sure we have a view available to access the vector entries.
+      if (!vector_1d_view)
+        {
+          auto vector_2d_view =
+            vector->template getLocalView<Kokkos::HostSpace>(
+              Tpetra::Access::ReadWriteStruct{});
+
+          vector_1d_view = Kokkos::subview(vector_2d_view, Kokkos::ALL(), 0);
+        }
+
+      const size_t localLength = vector->getLocalLength();
+      for (size_t k = 0; k < localLength; ++k)
+        {
+          (*vector_1d_view)(k) += a;
+        }
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    void
+    Vector<Number, MemorySpace>::add(const Number                       a,
+                                     const Vector<Number, MemorySpace> &V)
+    {
+      AssertIsFinite(a);
+
+      Assert(vector->getMap()->isSameAs(*(V.trilinos_vector().getMap())),
+             ExcDifferentParallelPartitioning());
+
+      // if we have ghost values, do not allow
+      // writing to this vector at all.
+      Assert(!has_ghost_elements(), ExcGhostsPresent());
+
+      // Reset our cached vector view so that trilinos operations on device do
+      // not detect an existing host view.
+      vector_1d_view.reset();
+
+      vector->update(a, V.trilinos_vector(), 1.);
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    void
+    Vector<Number, MemorySpace>::add(const Number                       a,
+                                     const Vector<Number, MemorySpace> &V,
+                                     const Number                       b,
+                                     const Vector<Number, MemorySpace> &W)
+    {
+      AssertIsFinite(a);
+      AssertIsFinite(b);
+
+      Assert(vector->getMap()->isSameAs(*(V.trilinos_vector().getMap())),
+             ExcDifferentParallelPartitioning());
+      Assert(vector->getMap()->isSameAs(*(W.trilinos_vector().getMap())),
+             ExcDifferentParallelPartitioning());
+
+      // if we have ghost values, do not allow
+      // writing to this vector at all.
+      Assert(!has_ghost_elements(), ExcGhostsPresent());
+
+      // Reset our cached vector view so that trilinos operations on device do
+      // not detect an existing host view.
+      vector_1d_view.reset();
+
+      vector->update(a, V.trilinos_vector(), b, W.trilinos_vector(), 1.);
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    void
+    Vector<Number, MemorySpace>::sadd(const Number                       s,
+                                      const Vector<Number, MemorySpace> &V)
+    {
+      sadd(s, 1., V);
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    void
+    Vector<Number, MemorySpace>::sadd(const Number                       s,
+                                      const Number                       a,
+                                      const Vector<Number, MemorySpace> &V)
+    {
+      // if we have ghost values, do not allow
+      // writing to this vector at all.
+      Assert(!has_ghost_elements(), ExcGhostsPresent());
+      AssertDimension(size(), V.size());
+      AssertIsFinite(s);
+      AssertIsFinite(a);
+
+      // Reset our cached vector view so that trilinos operations on device do
+      // not detect an existing host view.
+      vector_1d_view.reset();
+
+      // We assume that the vectors have the same Map
+      // if the local size is the same and if the vectors are not ghosted
+      if (locally_owned_size() == V.locally_owned_size() &&
+          !V.has_ghost_elements())
+        {
+          Assert(vector->getMap()->isSameAs(*(V.vector->getMap())) == true,
+                 ExcDifferentParallelPartitioning());
+          vector->update(a, *(V.vector), s);
+        }
+      else
+        {
+          // The two vectors are partitioned differently, or 'v'
+          // has ghost entries. In that case, we first have to create
+          // a temporary vector that holds a re-partitioned 'v'
+          // and to which we can then apply the current operation.
+          Vector tmp(locally_owned_elements(), get_mpi_communicator());
+          tmp = V;
+
+          // Now that we have vectors of the right kind, simply forward
+          // to the current function again, which should land us in the
+          // 'if' branch above.
+          sadd(s, a, tmp);
+        }
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    void
+    Vector<Number, MemorySpace>::scale(
+      const Vector<Number, MemorySpace> &scaling_factors)
+    {
+      Assert(vector->getMap()->isSameAs(
+               *(scaling_factors.trilinos_vector().getMap())),
+             ExcDifferentParallelPartitioning());
+
+      // if we have ghost values, do not allow
+      // writing to this vector at all.
+      Assert(!has_ghost_elements(), ExcGhostsPresent());
+
+      // Reset our cached vector view so that trilinos operations on device do
+      // not detect an existing host view.
+      vector_1d_view.reset();
+
+      vector->elementWiseMultiply(1., *scaling_factors.vector, *vector, 0.);
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    void
+    Vector<Number, MemorySpace>::equ(const Number                       a,
+                                     const Vector<Number, MemorySpace> &V)
+    {
+      AssertIsFinite(a);
+
+      // if we have ghost values, do not allow
+      // writing to this vector at all.
+      Assert(!has_ghost_elements(), ExcGhostsPresent());
+
+      // Reset our cached vector view so that trilinos operations on device do
+      // not detect an existing host view.
+      vector_1d_view.reset();
+
+      // If we don't have the same map, copy.
+      if (vector->getMap()->isSameAs(*V.trilinos_vector().getMap()) == false)
+        this->sadd(0., a, V);
+      else
+        {
+          // Otherwise, just update
+          vector->update(a, V.trilinos_vector(), 0.);
+        }
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    bool
+    Vector<Number, MemorySpace>::all_zero() const
+    {
+      // Reset our cached vector view so that trilinos operations on device do
+      // not detect an existing host view.
+      vector_1d_view.reset();
+      Teuchos::ArrayRCP<const Number> data = vector->getData();
+
+      const bool local_all_zero =
+        std::all_of(data.begin(),
+                    data.begin() + locally_owned_size(),
+                    numbers::value_is_zero<Number>);
+      return Utilities::MPI::logical_and(local_all_zero,
+                                         get_mpi_communicator());
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    bool
+    Vector<Number, MemorySpace>::is_non_negative() const
+    {
+      // Reset our cached vector view so that trilinos operations on device do
+      // not detect an existing host view.
+      vector_1d_view.reset();
+
+      if constexpr (!std::is_same_v<Number, std::complex<double>> &&
+                    !std::is_same_v<Number, std::complex<float>>)
+        {
+          // get a representation of the vector and
+          // loop over all the elements
+          Teuchos::ArrayRCP<const Number> data       = vector->getData();
+          const size_type                 n_elements = vector->getLocalLength();
+          unsigned int                    flag       = 0;
+          for (size_type i = 0; i < n_elements; ++i)
+            {
+              if (data[i] < Number(0))
+                {
+                  flag = 1;
+                  break;
+                }
+            }
+
+          // Check that the vector is non-negative on _all_ processors.
+          unsigned int num_negative =
+            Utilities::MPI::sum(flag,
+                                Utilities::Trilinos::teuchos_comm_to_mpi_comm(
+                                  vector->getMap()->getComm()));
+          return num_negative == 0;
+        }
+      Assert(false,
+             ExcMessage("You can't ask a complex value "
+                        "whether it is non-negative."));
+      return true;
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    Number
+    Vector<Number, MemorySpace>::mean_value() const
+    {
+      Assert(!has_ghost_elements(), ExcGhostsPresent());
+
+      // Reset our cached vector view so that trilinos operations on device do
+      // not detect an existing host view.
+      vector_1d_view.reset();
+
+      return vector->meanValue();
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    Number
+    Vector<Number, MemorySpace>::min() const
+    {
+      Assert(numbers::NumberTraits<Number>::is_complex == false,
+             ExcMessage(
+               "Not implemented for complex number types at the moment."));
+
+      // Make sure we have a view available to access the vector entries.
+      if (!vector_1d_view)
+        {
+          auto vector_2d_view =
+            vector->template getLocalView<Kokkos::HostSpace>(
+              Tpetra::Access::ReadWriteStruct{});
+
+          vector_1d_view = Kokkos::subview(vector_2d_view, Kokkos::ALL(), 0);
+        }
+
+      Number min_value = std::numeric_limits<Number>::max();
+
+      const size_t this_local_length = vector->getLocalLength();
+
+      for (size_type i = 0; i < this_local_length; ++i)
+        if ((*vector_1d_view)(i) < min_value)
+          min_value = (*vector_1d_view)(i);
+
+      return Utilities::MPI::min(min_value, get_mpi_communicator());
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    Number
+    Vector<Number, MemorySpace>::max() const
+    {
+      Assert(numbers::NumberTraits<Number>::is_complex == false,
+             ExcMessage(
+               "Not implemented for complex number types at the moment."));
+
+      // Reset our cached vector view so that trilinos operations on device do
+      // not detect an existing host view.
+      vector_1d_view.reset();
+
+      return vector->normInf();
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    typename Vector<Number, MemorySpace>::real_type
+    Vector<Number, MemorySpace>::l1_norm() const
+    {
+      Assert(!has_ghost_elements(), ExcGhostsPresent());
+
+      // Reset our cached vector view so that trilinos operations on device do
+      // not detect an existing host view.
+      vector_1d_view.reset();
+
+      return vector->norm1();
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    typename Vector<Number, MemorySpace>::real_type
+    Vector<Number, MemorySpace>::l2_norm() const
+    {
+      Assert(!has_ghost_elements(), ExcGhostsPresent());
+
+      // Reset our cached vector view so that trilinos operations on device do
+      // not detect an existing host view.
+      vector_1d_view.reset();
+
+      return vector->norm2();
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    typename Vector<Number, MemorySpace>::real_type
+    Vector<Number, MemorySpace>::linfty_norm() const
+    {
+      Assert(!has_ghost_elements(), ExcGhostsPresent());
+
+      // Reset our cached vector view so that trilinos operations on device do
+      // not detect an existing host view.
+      vector_1d_view.reset();
+
+      return vector->normInf();
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    typename Vector<Number, MemorySpace>::real_type
+    Vector<Number, MemorySpace>::norm_sqr() const
+    {
+      const Vector<Number, MemorySpace>::real_type d = l2_norm();
+      return d * d;
+    }
+
+
+    template <typename Number, typename MemorySpace>
+    Number
+    Vector<Number, MemorySpace>::add_and_dot(
+      const Number                       a,
+      const Vector<Number, MemorySpace> &V,
+      const Vector<Number, MemorySpace> &W)
+    {
+      Assert(!has_ghost_elements(), ExcGhostsPresent());
+      AssertIsFinite(a);
+
+      // Reset our cached vector view so that trilinos operations on device do
+      // not detect an existing host view.
+      vector_1d_view.reset();
+
+      this->add(a, V);
+
+      return *this * W;
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    bool
+    Vector<Number, MemorySpace>::operator==(
+      const Vector<Number, MemorySpace> &v) const
+    {
+      Assert(size() == v.size(), ExcDimensionMismatch(size(), v.size()));
+
+      const size_t this_local_length  = vector->getLocalLength();
+      const size_t other_local_length = v.vector->getLocalLength();
+      if (this_local_length != other_local_length)
+        return false;
+
+      // Make sure we have a view available to access the vector entries.
+      if (!vector_1d_view)
+        {
+          auto vector_2d_view =
+            vector->template getLocalView<Kokkos::HostSpace>(
+              Tpetra::Access::ReadWriteStruct{});
+
+          vector_1d_view = Kokkos::subview(vector_2d_view, Kokkos::ALL(), 0);
+        }
+
+      auto other_vector_2d_view =
+        v.vector->template getLocalView<Kokkos::HostSpace>(
+          Tpetra::Access::ReadOnlyStruct{});
+
+      auto other_vector_1d_view =
+        Kokkos::subview(other_vector_2d_view, Kokkos::ALL(), 0);
+
+      for (size_type i = 0; i < this_local_length; ++i)
+        if ((*vector_1d_view)(i) != other_vector_1d_view(i))
+          return false;
+
+      return true;
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    bool
+    Vector<Number, MemorySpace>::operator!=(
+      const Vector<Number, MemorySpace> &v) const
+    {
+      return (!(*this == v));
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    typename Vector<Number, MemorySpace>::size_type
+    Vector<Number, MemorySpace>::size() const
+    {
+#  ifndef HAVE_TEUCHOS_THREAD_SAFE
+      // Make this part of the function thread safe
+      std::scoped_lock lock(mutex);
+#  endif
+
+      return vector->getGlobalLength();
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    typename Vector<Number, MemorySpace>::size_type
+    Vector<Number, MemorySpace>::locally_owned_size() const
+    {
+      return local_entries.n_elements();
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    std::pair<typename Vector<Number, MemorySpace>::size_type,
+              typename Vector<Number, MemorySpace>::size_type>
+    Vector<Number, MemorySpace>::local_range() const
+    {
+#  ifndef HAVE_TEUCHOS_THREAD_SAFE
+      // Make this part of the function thread safe
+      std::scoped_lock lock(mutex);
+#  endif
+
+      const size_type begin = vector->getMap()->getMinGlobalIndex();
+      const size_type end   = vector->getMap()->getMaxGlobalIndex() + 1;
+
+      if constexpr (running_in_debug_mode())
+        {
+          const size_type n_local_elements =
+#  if DEAL_II_TRILINOS_VERSION_GTE(14, 0, 0)
+            vector->getMap()->getLocalNumElements();
+#  else
+            vector->getMap()->getNodeNumElements();
+#  endif
+          Assert(
+            end - begin == n_local_elements,
+            ExcMessage(
+              "This function only makes sense if the elements that this "
+              "vector stores on the current processor form a contiguous range. "
+              "This does not appear to be the case for the current vector."));
+        }
+
+      return std::make_pair(begin, end);
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    bool
+    Vector<Number, MemorySpace>::in_local_range(const size_type index) const
+    {
+      std::pair<size_type, size_type> range = local_range();
+
+      return ((index >= range.first) && (index < range.second));
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    MPI_Comm
+    Vector<Number, MemorySpace>::get_mpi_communicator() const
+    {
+      return Utilities::Trilinos::teuchos_comm_to_mpi_comm(
+        vector->getMap()->getComm());
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    IndexSet
+    Vector<Number, MemorySpace>::locally_owned_elements() const
+    {
+      return local_entries;
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    void
+    Vector<Number, MemorySpace>::update_ghost_values() const
+    {}
+
+
+
+    template <typename Number, typename MemorySpace>
+    void
+    Vector<Number, MemorySpace>::compress(
+      const VectorOperation::values operation)
+    {
+      Assert(has_ghost == false,
+             ExcMessage(
+               "Calling compress() is only useful if a vector "
+               "has been written into, but this is a vector with ghost "
+               "elements and consequently is read-only. It does "
+               "not make sense to call compress() for such "
+               "vectors."));
+
+      Assert(
+        (operation == VectorOperation::insert) ||
+          (operation == VectorOperation::add),
+        ExcMessage(
+          "Only VectorOperation::add and VectorOperation::insert are allowed."));
+
+      // If there were no local operations, assume the input argument is
+      // the correct operation to perform globally.
+      if (last_action == VectorOperation::unknown)
+        last_action = operation;
+
+      Assert(last_action == operation,
+             ExcMessage(
+               "The last operation on the vector and the given operation in "
+               "compress() do not agree."));
+
+      if constexpr (running_in_debug_mode())
+        {
+          // Check that all processors agree that last_action is the same
+          int my_int_last_action = last_action;
+          int all_int_last_action;
+
+          const int ierr = MPI_Allreduce(&my_int_last_action,
+                                         &all_int_last_action,
+                                         1,
+                                         MPI_INT,
+                                         MPI_BOR,
+                                         get_mpi_communicator());
+          AssertThrowMPI(ierr);
+
+          AssertThrow(all_int_last_action !=
+                        (VectorOperation::add | VectorOperation::insert),
+                      ExcMessage(
+                        "Not all processors agree on the last "
+                        "VectorOperation before this compress() call."));
+        }
+
+      bool nonlocal_vector_is_temporary = false;
+      if (nonlocal_vector.is_null())
+        {
+          // Use a temporary vector created from cached entries
+          nonlocal_vector_is_temporary = true;
+
+          Assert(nonlocal_cached_indices.size() ==
+                   nonlocal_cached_values.size(),
+                 ExcInternalError());
+
+          // First create the index set of ghost indices we will need to
+          // ship to other processes.
+          IndexSet ghost_indices(local_entries.size());
+          for (const auto &index : nonlocal_cached_indices)
+            ghost_indices.add_index(index);
+
+          ghost_indices.compress();
+
+          // Create a temporary nonlocal vector with a map that corresponds
+          // to the cached entries stored on this process.
+          // Create an overlapping map, because we dont know
+          // how many processes may write into one entry.
+          nonlocal_vector = Utilities::Trilinos::internal::make_rcp<
+            TpetraTypes::VectorType<Number, MemorySpace>>(
+            ghost_indices
+              .template make_tpetra_map_rcp<TpetraTypes::NodeType<MemorySpace>>(
+                get_mpi_communicator(), true));
+
+          // Now fill the nonlocal vector with the cached entries
+          {
+            // Extract a view into the vector in order to modify it
+            auto nonlocal_vector_2d_view =
+              nonlocal_vector->template getLocalView<Kokkos::HostSpace>(
+                Tpetra::Access::ReadWriteStruct{});
+
+            nonlocal_vector_1d_view =
+              Kokkos::subview(nonlocal_vector_2d_view, Kokkos::ALL(), 0);
+
+            const auto n_elements = nonlocal_cached_indices.size();
+            for (size_type i = 0; i < n_elements; ++i)
+              {
+                const size_type row = nonlocal_cached_indices[i];
+                const TrilinosWrappers::types::int_type local_row =
+                  nonlocal_vector->getMap()->getLocalElement(row);
+
+                // We created nonlocal_vector to contain this entry locally
+                Assert(local_row != Teuchos::OrdinalTraits<int>::invalid(),
+                       ExcInternalError());
+
+                if (operation == VectorOperation::insert)
+                  (*nonlocal_vector_1d_view)(local_row) =
+                    nonlocal_cached_values[i];
+                else if (operation == VectorOperation::add)
+                  (*nonlocal_vector_1d_view)(local_row) +=
+                    nonlocal_cached_values[i];
+                else
+                  DEAL_II_NOT_IMPLEMENTED();
+              }
+          }
+        }
+
+      // Destroy the views already here, because we are calling doExport() or
+      // putScalar() below.
+      nonlocal_vector_1d_view.reset();
+      vector_1d_view.reset();
+
+      // Handle vector additions
+      // If the nonlocal vector is permanent (=fixed-size) we cannot guarantee
+      // that all processes that store an entry have written into it. Therefore
+      // only perform insertions if the nonlocal vector is temporary, because
+      // then only processes that have modified it, will try to write into it.
+      if (nonlocal_vector_is_temporary || operation == VectorOperation::add)
+        {
+          Tpetra::CombineMode tpetra_operation = Tpetra::ZERO;
+          if (operation == VectorOperation::insert)
+            tpetra_operation = Tpetra::INSERT;
+          else if (operation == VectorOperation::add)
+            tpetra_operation = Tpetra::ADD;
+          else
+            DEAL_II_NOT_IMPLEMENTED();
+
+          Teuchos::RCP<const TpetraTypes::ExportType<MemorySpace>> exporter =
+            Tpetra::createExport(nonlocal_vector->getMap(), vector->getMap());
+          vector->doExport(*nonlocal_vector, *exporter, tpetra_operation);
+        }
+
+      // And reset or destroy the temporary nonlocal_vector again
+      if (nonlocal_vector_is_temporary)
+        {
+          nonlocal_vector.reset();
+          nonlocal_cached_values.clear();
+          nonlocal_cached_indices.clear();
+        }
+      else
+        nonlocal_vector->putScalar(Number(0));
+
+      compressed  = true;
+      last_action = VectorOperation::unknown;
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    const TpetraTypes::VectorType<Number, MemorySpace> &
+    Vector<Number, MemorySpace>::trilinos_vector() const
+    {
+      return *vector;
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    TpetraTypes::VectorType<Number, MemorySpace> &
+    Vector<Number, MemorySpace>::trilinos_vector()
+    {
+      return *vector;
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    const TpetraTypes::MapType<MemorySpace> &
+    Vector<Number, MemorySpace>::trilinos_partitioner() const
+    {
+      return *vector->getMap();
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    Teuchos::RCP<TpetraTypes::VectorType<Number, MemorySpace>>
+    Vector<Number, MemorySpace>::trilinos_rcp()
+    {
+      return vector;
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    Teuchos::RCP<const TpetraTypes::VectorType<Number, MemorySpace>>
+    Vector<Number, MemorySpace>::trilinos_rcp() const
+    {
+      return vector.getConst();
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    void
+    Vector<Number, MemorySpace>::print(std::ostream      &out,
+                                       const unsigned int precision,
+                                       const bool         scientific,
+                                       const bool         across) const
+    {
+      AssertThrow(out.fail() == false, ExcIO());
+      boost::io::ios_flags_saver restore_flags(out);
+
+      out.precision(precision);
+      if (scientific)
+        out.setf(std::ios::scientific, std::ios::floatfield);
+      else
+        out.setf(std::ios::fixed, std::ios::floatfield);
+
+      // Make sure we have a view available to access the vector entries.
+      if (!vector_1d_view)
+        {
+          auto vector_2d_view =
+            vector->template getLocalView<Kokkos::HostSpace>(
+              Tpetra::Access::ReadWriteStruct{});
+
+          vector_1d_view = Kokkos::subview(vector_2d_view, Kokkos::ALL(), 0);
+        }
+
+      const size_t local_length = vector->getLocalLength();
+
+      if (size() != local_length)
+        {
+          out << "size:" << size() << " locally_stored_size:" << local_length
+              << " :" << std::endl;
+          for (size_type i = 0; i < local_length; ++i)
+            {
+              const TrilinosWrappers::types::int_type global_row =
+                vector->getMap()->getGlobalElement(i);
+              out << "[" << global_row << "]: " << (*vector_1d_view)(i)
+                  << std::endl;
+            }
+        }
+      else
+        {
+          if (across)
+            for (unsigned int i = 0; i < local_length; ++i)
+              out << (*vector_1d_view)(i) << ' ';
+          else
+            for (unsigned int i = 0; i < local_length; ++i)
+              out << (*vector_1d_view)(i) << std::endl;
+          out << std::endl;
+        }
+
+      // restore the representation
+      // of the vector
+      AssertThrow(out.fail() == false, ExcIO());
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    MPI_Comm
+    Vector<Number, MemorySpace>::mpi_comm() const
+    {
+      return Utilities::Trilinos::teuchos_comm_to_mpi_comm(
+        vector->getMap()->getComm());
+    }
+
+
+    template <typename Number, typename MemorySpace>
+    std::size_t
+    Vector<Number, MemorySpace>::memory_consumption() const
+    {
+      return sizeof(*this) +
+             vector->getLocalLength() *
+               (sizeof(Number) + sizeof(TrilinosWrappers::types::int_type));
+    }
+
+
+
+    template <typename Number, typename MemorySpace>
+    void
+    Vector<Number, MemorySpace>::create_tpetra_comm_pattern(
+      const IndexSet &source_index_set,
+      const MPI_Comm  mpi_comm)
+    {
+      source_stored_elements = source_index_set;
+
+      tpetra_comm_pattern =
+        Teuchos::rcp(new TpetraWrappers::CommunicationPattern<MemorySpace>(
+          locally_owned_elements(), source_index_set, mpi_comm));
+    }
+  } // namespace TpetraWrappers
+} // namespace LinearAlgebra
+
+#endif
+
+DEAL_II_NAMESPACE_CLOSE
+
+#endif

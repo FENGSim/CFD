@@ -1,0 +1,78 @@
+// -----------------------------------------------------------------------------
+//
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception OR LGPL-2.1-or-later
+// Copyright (C) 2016 - 2025 by the deal.II authors
+//
+// This file is part of the deal.II library.
+//
+// Detailed license information governing the source code and contributions
+// can be found in LICENSE.md and CONTRIBUTING.md at the top level directory.
+//
+// -----------------------------------------------------------------------------
+
+
+for (deal_II_dimension : DIMENSIONS; number : REAL_SCALARS)
+  {
+    template class SymmetricTensor<2, deal_II_dimension, number>;
+
+    template class SymmetricTensor<4, deal_II_dimension, number>;
+
+    template std::array<number, deal_II_dimension> eigenvalues(
+      const SymmetricTensor<2, deal_II_dimension, number> &);
+
+    template std::array<std::pair<number, Tensor<1, deal_II_dimension, number>>,
+                        deal_II_dimension>
+    eigenvectors<deal_II_dimension, number>(
+      const SymmetricTensor<2, deal_II_dimension, number> &,
+      const SymmetricTensorEigenvectorMethod);
+  }
+
+for (deal_II_dimension : DIMENSIONS; number : DIFFERENTIABLE_ADOLC_REAL_SCALARS)
+  {
+    template class SymmetricTensor<2, deal_II_dimension, number>;
+
+    template class SymmetricTensor<4, deal_II_dimension, number>;
+  }
+
+for (deal_II_dimension : DIMENSIONS;
+     number : DIFFERENTIABLE_TRILINOS_SACADO_REAL_SCALARS)
+  {
+    template class SymmetricTensor<2, deal_II_dimension, number>;
+
+    template class SymmetricTensor<4, deal_II_dimension, number>;
+
+    template std::array<number, deal_II_dimension> eigenvalues(
+      const SymmetricTensor<2, deal_II_dimension, number> &);
+
+    template std::array<std::pair<number, Tensor<1, deal_II_dimension, number>>,
+                        deal_II_dimension>
+    eigenvectors<deal_II_dimension, number>(
+      const SymmetricTensor<2, deal_II_dimension, number> &,
+      const SymmetricTensorEigenvectorMethod);
+  }
+
+for (deal_II_dimension : DIMENSIONS; number : COMPLEX_SCALARS)
+  {
+    template class SymmetricTensor<2, deal_II_dimension, number>;
+
+    template class SymmetricTensor<4, deal_II_dimension, number>;
+  }
+
+
+for (number : REAL_SCALARS)
+  {
+    template DEAL_II_HOST_DEVICE SymmetricTensor<4, 3, number> invert(
+      const SymmetricTensor<4, 3, number> &t);
+  }
+
+for (number : DIFFERENTIABLE_ADOLC_REAL_SCALARS)
+  {
+    template DEAL_II_HOST_DEVICE SymmetricTensor<4, 3, number> invert(
+      const SymmetricTensor<4, 3, number> &t);
+  }
+
+for (number : DIFFERENTIABLE_TRILINOS_SACADO_REAL_SCALARS)
+  {
+    template DEAL_II_HOST_DEVICE SymmetricTensor<4, 3, number> invert(
+      const SymmetricTensor<4, 3, number> &t);
+  }

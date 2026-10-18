@@ -1,0 +1,70 @@
+// -----------------------------------------------------------------------------
+//
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception OR LGPL-2.1-or-later
+// Copyright (C) 2022 - 2026 by the deal.II authors
+//
+// This file is part of the deal.II library.
+//
+// Detailed license information governing the source code and contributions
+// can be found in LICENSE.md and CONTRIBUTING.md at the top level directory.
+//
+// -----------------------------------------------------------------------------
+
+#ifndef dealii_mpi_stub_h
+#define dealii_mpi_stub_h
+
+#include <deal.II/base/config.h>
+
+// If we have mpi.h then include it. Otherwise, define some common MPI data
+// types and global constants for the no-MPI case. This way we can still use,
+// e.g., MPI_Comm in the API.
+
+#if defined(DEAL_II_WITH_MPI)
+
+DEAL_II_DISABLE_EXTRA_DIAGNOSTICS
+// Avoid a macro collision between mpc.h and MPICH's C++ headers by
+// undefining DOUBLE_COMPLEX and LONG_DOUBLE_COMPLEX before including <mpi.h>
+// On some macOS setups mpc.h (from libmpc) defines macros
+// DOUBLE_COMPLEX/LONG_DOUBLE_COMPLEX that expand into C keywords
+// (e.g. double _Complex). These break MPICH's mpicxx.h declarations
+// (e.g. extern Datatype DOUBLE_COMPLEX;), causing compile errors.
+#  ifdef DOUBLE_COMPLEX
+#    undef DOUBLE_COMPLEX
+#  endif
+#  ifdef LONG_DOUBLE_COMPLEX
+#    undef LONG_DOUBLE_COMPLEX
+#  endif
+#  include <mpi.h>
+DEAL_II_ENABLE_EXTRA_DIAGNOSTICS
+
+#endif
+
+
+DEAL_II_NAMESPACE_OPEN
+
+#ifndef DEAL_II_WITH_MPI
+
+// Without MPI, we would still like to use some constructs with MPI
+// data types. Therefore, create some dummies. Since we only ever use
+// them inside our own constructs, the right thing to do is to put
+// them into namespace dealii:
+
+using MPI_Comm     = int;
+using MPI_Request  = int;
+using MPI_Datatype = int;
+using MPI_Op       = int;
+
+constexpr MPI_Comm    MPI_COMM_WORLD   = 0;
+constexpr MPI_Comm    MPI_COMM_SELF    = 0;
+constexpr MPI_Comm    MPI_COMM_NULL    = 0;
+constexpr MPI_Request MPI_REQUEST_NULL = 0;
+constexpr MPI_Op      MPI_MIN          = 0;
+constexpr MPI_Op      MPI_MAX          = 0;
+constexpr MPI_Op      MPI_SUM          = 0;
+constexpr MPI_Op      MPI_LAND         = 0;
+constexpr MPI_Op      MPI_LOR          = 0;
+#endif
+
+DEAL_II_NAMESPACE_CLOSE
+
+#endif

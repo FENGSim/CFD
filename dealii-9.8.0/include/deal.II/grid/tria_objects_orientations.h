@@ -1,0 +1,266 @@
+// -----------------------------------------------------------------------------
+//
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception OR LGPL-2.1-or-later
+// Copyright (C) 2023 - 2026 by the deal.II authors
+//
+// This file is part of the deal.II library.
+//
+// Detailed license information governing the source code and contributions
+// can be found in LICENSE.md and CONTRIBUTING.md at the top level directory.
+//
+// -----------------------------------------------------------------------------
+
+#ifndef dealii_tria_objects_orientations_h
+#define dealii_tria_objects_orientations_h
+
+#include <deal.II/base/config.h>
+
+#include <deal.II/base/exceptions.h>
+#include <deal.II/base/memory_consumption.h>
+#include <deal.II/base/utilities.h>
+
+#include <deal.II/grid/reference_cell.h>
+
+#include <vector>
+
+DEAL_II_NAMESPACE_OPEN
+
+namespace internal
+{
+  namespace TriangulationImplementation
+  {
+    /**
+     * Class storing orientation information for various objects in a
+     * Triangulation.
+     *
+     * @ingroup reordering
+     */
+    class TriaObjectsOrientations
+    {
+    public:
+      /**
+       * Constructor.
+       */
+      TriaObjectsOrientations();
+
+      /**
+       * Constructor. Sets up objects in the default orientation (orientation
+       * = `true`).
+       */
+      TriaObjectsOrientations(const std::size_t  n_objects,
+                              const unsigned int n_faces_per_object);
+
+      /**
+       * Return number of geometric objects stored by this class.
+       */
+      std::size_t
+      n_objects() const;
+
+      /**
+       * Reset the object to a default state.
+       */
+      void
+      reinit(const std::size_t  n_objects,
+             const unsigned int n_faces_per_object);
+
+      /**
+       * Change the number of stored objects. New objects are constructed in
+       * the default orientation (true, false, false).
+       */
+      void
+      resize(const std::size_t n_objects);
+
+      /**
+       * Return the size of objects of this kind.
+       */
+      std::size_t
+      memory_consumption() const;
+
+      /**
+       * Get the combined orientation of the object, as described in the class
+       * documentation.
+       */
+      types::geometric_orientation
+      get_combined_orientation(const int          index,
+                               const unsigned int face_no) const;
+
+      /**
+       * Get the orientation bit of the object.
+       */
+      bool
+      get_orientation(const int index, const unsigned int face_no) const;
+
+      /**
+       * Get the rotation bit of the object.
+       */
+      bool
+      get_rotation(const int index, const unsigned int face_no) const;
+
+      /**
+       * Get the flip bit of the object.
+       */
+      bool
+      get_flip(const int index, const unsigned int face_no) const;
+
+      /**
+       * Set the combined orientation of the object, as described in the class
+       * documentation.
+       */
+      void
+      set_combined_orientation(const int                          index,
+                               const unsigned int                 face_no,
+                               const types::geometric_orientation value);
+
+      /**
+       * Read or write the data of this object to or from a stream for the
+       * purpose of serialization using the [BOOST serialization
+       * library](https://www.boost.org/doc/libs/1_74_0/libs/serialization/doc/index.html).
+       */
+      template <class Archive>
+      void
+      serialize(Archive &ar, const unsigned int version);
+
+    private:
+      /**
+       * Number of objects.
+       */
+      std::size_t n_stored_objects;
+
+      /**
+       * Number of faces per object.
+       */
+      unsigned int faces_per_object;
+
+      /**
+       * Orientations.
+       */
+      std::vector<types::geometric_orientation> face_orientations;
+    };
+
+    //----------------------------------------------------------------------//
+
+    inline TriaObjectsOrientations::TriaObjectsOrientations()
+    {
+      reinit(0, numbers::invalid_unsigned_int);
+    }
+
+
+
+    inline TriaObjectsOrientations::TriaObjectsOrientations(
+      const std::size_t  n_objects,
+      const unsigned int n_faces_per_object)
+    {
+      reinit(n_objects, n_faces_per_object);
+    }
+
+
+
+    inline void
+    TriaObjectsOrientations::reinit(const std::size_t  n_objects,
+                                    const unsigned int n_faces_per_object)
+    {
+      n_stored_objects = n_objects;
+      faces_per_object = n_faces_per_object;
+      face_orientations.assign(n_objects * faces_per_object,
+                               numbers::default_geometric_orientation);
+    }
+
+
+
+    inline void
+    TriaObjectsOrientations::resize(const std::size_t n_objects)
+    {
+      n_stored_objects = n_objects;
+      face_orientations.resize(n_objects * faces_per_object,
+                               numbers::default_geometric_orientation);
+    }
+
+
+
+    inline std::size_t
+    TriaObjectsOrientations::memory_consumption() const
+    {
+      return MemoryConsumption::memory_consumption(n_stored_objects) +
+             MemoryConsumption::memory_consumption(faces_per_object) +
+             MemoryConsumption::memory_consumption(face_orientations);
+    }
+
+
+
+    inline std::size_t
+    TriaObjectsOrientations::n_objects() const
+    {
+      AssertDimension(n_stored_objects,
+                      face_orientations.size() / faces_per_object);
+      return n_stored_objects;
+    }
+
+
+
+    inline types::geometric_orientation
+    TriaObjectsOrientations::get_combined_orientation(
+      const int          index,
+      const unsigned int face_no) const
+    {
+      Assert(index >= 0, ExcInternalError());
+      AssertIndexRange(face_no, faces_per_object);
+      const auto i = index * faces_per_object + face_no;
+      AssertIndexRange(i, face_orientations.size());
+      return face_orientations[i];
+    }
+
+
+
+    inline bool
+    TriaObjectsOrientations::get_orientation(const int          index,
+                                             const unsigned int face_no) const
+    {
+      return !Utilities::get_bit(get_combined_orientation(index, face_no), 0);
+    }
+
+
+
+    inline bool
+    TriaObjectsOrientations::get_rotation(const int          index,
+                                          const unsigned int face_no) const
+    {
+      return Utilities::get_bit(get_combined_orientation(index, face_no), 1);
+    }
+
+
+
+    inline bool
+    TriaObjectsOrientations::get_flip(const int          index,
+                                      const unsigned int face_no) const
+    {
+      return Utilities::get_bit(get_combined_orientation(index, face_no), 2);
+    }
+
+
+
+    inline void
+    TriaObjectsOrientations::set_combined_orientation(
+      const int                          index,
+      const unsigned int                 face_no,
+      const types::geometric_orientation value)
+    {
+      Assert(index >= 0, ExcInternalError());
+      const auto i = index * faces_per_object + face_no;
+      AssertIndexRange(i, face_orientations.size());
+      face_orientations[i] = value;
+    }
+
+
+
+    template <class Archive>
+    void
+    TriaObjectsOrientations::serialize(Archive &ar, const unsigned int)
+    {
+      ar &n_stored_objects &faces_per_object &face_orientations;
+    }
+  } // namespace TriangulationImplementation
+} // namespace internal
+
+DEAL_II_NAMESPACE_CLOSE
+
+#endif

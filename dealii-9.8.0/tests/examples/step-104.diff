@@ -1,0 +1,30 @@
+963,966d962
+<       const double time          = t.wall_time();
+<       const double dofs_p_second = static_cast<double>(solution.size()) / time;
+<       pcout << "Stokes operator: " << time << " s, DoFs/s: " << dofs_p_second
+<             << std::endl;
+1198,1205c1194
+<           << " iterations in " << t.wall_time() << " seconds" << std::endl;
+< 
+<     pcout << "Velocity block GMG timings:"
+<           << "\n    smoother: " << timer_smoother.wall_time()
+<           << " s\n    transfer: " << timer_transfer.wall_time()
+<           << " s\n    coarse  : " << timer_coarse.wall_time()
+<           << " s\n    residual: " << timer_residual.wall_time() << " s"
+<           << std::endl;
+---
+>           << " iterations in " << 0.0 << " seconds" << std::endl;
+1270,1275c1259,1260
+<           << " MPI ranks (with " << MultithreadInfo::n_threads()
+<           << " threads each) in ";
+<     if constexpr (running_in_debug_mode())
+<       pcout << "DEBUG mode";
+<     else
+<       pcout << "RELEASE mode";
+---
+>           << " MPI ranks (with "
+>           << " threads each)";
+1283c1268
+<     unsigned int n_refinements = 10;
+---
+>     unsigned int n_refinements = 2;

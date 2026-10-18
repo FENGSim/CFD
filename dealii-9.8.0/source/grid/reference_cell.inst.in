@@ -1,0 +1,44 @@
+// -----------------------------------------------------------------------------
+//
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception OR LGPL-2.1-or-later
+// Copyright (C) 2020 - 2026 by the deal.II authors
+//
+// This file is part of the deal.II library.
+//
+// Detailed license information governing the source code and contributions
+// can be found in LICENSE.md and CONTRIBUTING.md at the top level directory.
+//
+// -----------------------------------------------------------------------------
+
+
+// Instantiate the class for the usual dimensions: 1, 2, 3. We also
+// need instantiations for dimension 0 (vertices) and do that in
+// the .cc file.
+for (deal_II_dimension : DIMENSIONS)
+  {
+    template class ReferenceCell<deal_II_dimension>;
+
+    template std::ostream &operator<<(
+      std::ostream                           &out,
+      const ReferenceCell<deal_II_dimension> &reference_cell);
+
+    template std::istream &operator>>(
+      std::istream &in, ReferenceCell<deal_II_dimension> &reference_cell);
+  }
+
+
+// Then instantiate some members that are themselves templates. We only
+// need those for the usual dimensions
+for (deal_II_dimension : DIMENSIONS; deal_II_space_dimension : SPACE_DIMENSIONS)
+  {
+#if deal_II_dimension <= deal_II_space_dimension
+    template std::unique_ptr<
+      Mapping<deal_II_dimension, deal_II_space_dimension>>
+    ReferenceCell<deal_II_dimension>::get_default_mapping<
+      deal_II_space_dimension>(const unsigned int degree) const;
+
+    template const Mapping<deal_II_dimension, deal_II_space_dimension> &
+    ReferenceCell<deal_II_dimension>::get_default_linear_mapping<
+      deal_II_space_dimension>() const;
+#endif
+  }

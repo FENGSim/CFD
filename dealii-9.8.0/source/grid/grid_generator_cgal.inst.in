@@ -1,0 +1,27 @@
+// -----------------------------------------------------------------------------
+//
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception OR LGPL-2.1-or-later
+// Copyright (C) 2000 - 2022 by the deal.II authors
+//
+// This file is part of the deal.II library.
+//
+// Detailed license information governing the source code and contributions
+// can be found in LICENSE.md and CONTRIBUTING.md at the top level directory.
+//
+// -----------------------------------------------------------------------------
+
+for (deal_II_dimension : DIMENSIONS)
+  {
+    namespace GridGenerator
+    \{
+#if deal_II_dimension >= 2
+      template void
+      implicit_function<deal_II_dimension>(
+        Triangulation<deal_II_dimension, 3> &,
+        const Function<3> &,
+        const CGALWrappers::AdditionalData<deal_II_dimension> &,
+        const Point<3> &,
+        const double &);
+#endif
+    \}
+  }

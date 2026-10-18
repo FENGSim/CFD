@@ -1,0 +1,188 @@
+## -----------------------------------------------------------------------------
+##
+## SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception OR LGPL-2.1-or-later
+## Copyright (C) 2017 - 2025 by the deal.II authors
+##
+## This file is part of the deal.II library.
+##
+## Detailed license information governing the source code and contributions
+## can be found in LICENSE.md and CONTRIBUTING.md at the top level directory.
+##
+## -----------------------------------------------------------------------------
+
+#
+# Try to find the SUNDIALS libraries
+#
+# This module exports
+#
+#   SUNDIALS_LIBRARIES
+#   SUNDIALS_INCLUDE_DIR
+#   SUNDIALS_WITH_IDAS
+#   SUNDIALS_WITH_MPI
+#   SUNDIALS_VERSION
+#   SUNDIALS_VERSION_MAJOR
+#   SUNDIALS_VERSION_MINOR
+#   SUNDIALS_VERSION_PATCH
+#
+# Note that sundials headers are typically installed in several directories,
+# e.g.,
+#
+# /prefix/include/ida/ida.h
+# /prefix/include/kinsol/kinsol.h
+# /prefix/include/sundials/sundials_nvector.h
+#
+# Here SUNDIALS_INCLUDE_DIR is just '/prefix/include/', not
+# '/prefix/include/sundials/'.
+
+set(SUNDIALS_DIR "" CACHE PATH "An optional hint to a SUNDIALS_DIR installation")
+set_if_empty(SUNDIALS_DIR "$ENV{SUNDIALS_DIR}")
+
+deal_ii_find_library(SUNDIALS_LIB_CORE NAMES sundials_core
+  HINTS ${SUNDIALS_DIR}
+  PATH_SUFFIXES lib${LIB_SUFFIX} lib64 lib
+  )
+
+deal_ii_find_library(SUNDIALS_LIB_IDAS NAMES sundials_idas
+  HINTS ${SUNDIALS_DIR}
+  PATH_SUFFIXES lib${LIB_SUFFIX} lib64 lib
+  )
+
+deal_ii_find_library(SUNDIALS_LIB_IDA NAMES sundials_ida
+  HINTS ${SUNDIALS_DIR}
+  PATH_SUFFIXES lib${LIB_SUFFIX} lib64 lib
+  )
+
+deal_ii_find_library(SUNDIALS_LIB_ARKODE NAMES sundials_arkode
+  HINTS ${SUNDIALS_DIR}
+  PATH_SUFFIXES lib${LIB_SUFFIX} lib64 lib
+  )
+
+deal_ii_find_library(SUNDIALS_LIB_KINSOL NAMES sundials_kinsol
+  HINTS ${SUNDIALS_DIR}
+  PATH_SUFFIXES lib${LIB_SUFFIX} lib64 lib
+  )
+
+deal_ii_find_library(SUNDIALS_LIB_SER NAMES sundials_nvecserial
+  HINTS ${SUNDIALS_DIR}
+  PATH_SUFFIXES lib${LIB_SUFFIX} lib64 lib
+  )
+
+#
+# The dominant eigenvalue estimator (power iteration) is provided in a
+# separate library as of SUNDIALS 7.5.0. It is used as the default dominant
+# eigenvalue estimator for the LSRKStep STS family. Link it when available.
+#
+deal_ii_find_library(SUNDIALS_LIB_DOMEIGESTPOWER NAMES sundials_sundomeigestpower
+  HINTS ${SUNDIALS_DIR}
+  PATH_SUFFIXES lib${LIB_SUFFIX} lib64 lib
+  )
+
+deal_ii_find_path(SUNDIALS_INCLUDE_DIR sundials/sundials_version.h
+  HINTS ${SUNDIALS_DIR}
+  PATH_SUFFIXES include
+)
+
+set(_sundials_lib_par)
+if(DEAL_II_WITH_MPI)
+  deal_ii_find_library(SUNDIALS_LIB_PAR NAMES sundials_nvecparallel
+    HINTS ${SUNDIALS_DIR}
+    PATH_SUFFIXES lib${LIB_SUFFIX} lib64 lib
+    )
+  set(_sundials_lib_par "SUNDIALS_LIB_PAR")
+endif()
+
+#
+# If IDAS is available, we prefer said library over IDA. We have to make
+# sure to only link one of the two library variants:
+#
+if(NOT SUNDIALS_LIB_IDAS MATCHES "-NOTFOUND")
+  set(_sundials_lib_ida "SUNDIALS_LIB_IDAS")
+  set(SUNDIALS_WITH_IDAS TRUE)
+else()
+  set(_sundials_lib_ida "SUNDIALS_LIB_IDA")
+  set(SUNDIALS_WITH_IDAS FALSE)
+endif()
+
+#
+# Extract SUNDIALS version.
+#
+deal_ii_find_file(SUNDIALS_CONFIG_H
+  NAMES sundials_config.h
+  HINTS ${SUNDIALS_INCLUDE_DIR}/sundials
+  )
+if(NOT SUNDIALS_CONFIG_H MATCHES "-NOTFOUND")
+  file(STRINGS "${SUNDIALS_CONFIG_H}" SUNDIALS_VERSION_MAJOR_STRING
+    REGEX "#define.*SUNDIALS_VERSION_MAJOR"
+    )
+  string(REGEX REPLACE "^.*SUNDIALS_VERSION_MAJOR.*([0-9]+).*" "\\1"
+    SUNDIALS_VERSION_MAJOR "${SUNDIALS_VERSION_MAJOR_STRING}"
+    )
+  file(STRINGS "${SUNDIALS_CONFIG_H}" SUNDIALS_VERSION_MINOR_STRING
+    REGEX "#define.*SUNDIALS_VERSION_MINOR"
+    )
+  string(REGEX REPLACE "^.*SUNDIALS_VERSION_MINOR.*([0-9]+).*" "\\1"
+    SUNDIALS_VERSION_MINOR "${SUNDIALS_VERSION_MINOR_STRING}"
+    )
+  file(STRINGS "${SUNDIALS_CONFIG_H}" SUNDIALS_VERSION_PATCH_STRING
+    REGEX "#define.*SUNDIALS_VERSION_PATCH"
+    )
+  string(REGEX REPLACE "^.*SUNDIALS_VERSION_PATCH.*([0-9]+).*" "\\1"
+    SUNDIALS_VERSION_PATCH "${SUNDIALS_VERSION_PATCH_STRING}"
+    )
+
+  set(SUNDIALS_VERSION
+    "${SUNDIALS_VERSION_MAJOR}.${SUNDIALS_VERSION_MINOR}.${SUNDIALS_VERSION_PATCH}"
+    )
+
+  #
+  # Determine whether Sundials was configured with MPI:
+  #
+  file(STRINGS "${SUNDIALS_CONFIG_H}" SUNDIALS_MPI_STRING
+    REGEX "^[ \t]*#[ \t]*define[ \t]+SUNDIALS_MPI_ENABLED[ \t]1")
+  if("${SUNDIALS_MPI_STRING}" STREQUAL "")
+    set(SUNDIALS_WITH_MPI FALSE)
+  else()
+    set(SUNDIALS_WITH_MPI TRUE)
+  endif()
+endif()
+
+#
+# sundials_core is only required as of version 7.0.0.
+#
+set(_sundials_lib_core)
+if(SUNDIALS_VERSION VERSION_GREATER_EQUAL 7)
+  set(_sundials_lib_core "SUNDIALS_LIB_CORE")
+endif()
+
+#
+# The dominant eigenvalue estimator (power iteration) library exists only as
+# of SUNDIALS 7.5.0. Only add it to the link interface when it was found.
+#
+set(_sundials_lib_domeig)
+if(NOT SUNDIALS_LIB_DOMEIGESTPOWER MATCHES "-NOTFOUND")
+  set(_sundials_lib_domeig "SUNDIALS_LIB_DOMEIGESTPOWER")
+endif()
+
+process_feature(SUNDIALS
+  LIBRARIES REQUIRED
+    ${_sundials_lib_core}
+    ${_sundials_lib_ida}
+    SUNDIALS_LIB_ARKODE
+    SUNDIALS_LIB_KINSOL
+    SUNDIALS_LIB_SER
+    ${_sundials_lib_par}
+    ${_sundials_lib_domeig}
+  INCLUDE_DIRS REQUIRED
+    SUNDIALS_INCLUDE_DIR
+  CLEAR
+    SUNDIALS_LIB_CORE
+    SUNDIALS_LIB_IDA
+    SUNDIALS_LIB_IDAS
+    SUNDIALS_LIB_ARKODE
+    SUNDIALS_LIB_KINSOL
+    SUNDIALS_LIB_SER
+    ${_sundials_lib_par}
+    SUNDIALS_LIB_DOMEIGESTPOWER
+    SUNDIALS_INCLUDE_DIR
+    SUNDIALS_CONFIG_H
+  )

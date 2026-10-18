@@ -1,0 +1,34 @@
+// -----------------------------------------------------------------------------
+//
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception OR LGPL-2.1-or-later
+// Copyright (C) 2022 - 2025 by the deal.II authors
+//
+// This file is part of the deal.II library.
+//
+// Detailed license information governing the source code and contributions
+// can be found in LICENSE.md and CONTRIBUTING.md at the top level directory.
+//
+// -----------------------------------------------------------------------------
+
+#ifndef dealii_cxx17_variant_h
+#define dealii_cxx17_variant_h
+
+#include <deal.II/base/config.h>
+
+#include <variant>
+
+#ifndef DEAL_II_BUILDING_CXX20_MODULE
+DEAL_II_WARNING("This file is deprecated."
+                "Use the corresponding C++17 header variant instead.")
+#endif
+
+DEAL_II_NAMESPACE_OPEN
+namespace std_cxx17
+{
+  using std::get;
+  using std::holds_alternative;
+  using std::variant;
+} // namespace std_cxx17
+DEAL_II_NAMESPACE_CLOSE
+
+#endif

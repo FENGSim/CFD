@@ -1,0 +1,56 @@
+// -----------------------------------------------------------------------------
+//
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception OR LGPL-2.1-or-later
+// Copyright (C) 2007 - 2026 by the deal.II authors
+//
+// This file is part of the deal.II library.
+//
+// Detailed license information governing the source code and contributions
+// can be found in LICENSE.md and CONTRIBUTING.md at the top level directory.
+//
+// -----------------------------------------------------------------------------
+
+#include <deal.II/lac/block_vector.h>
+#include <deal.II/lac/la_parallel_block_vector.h>
+#include <deal.II/lac/la_parallel_vector.h>
+#include <deal.II/lac/petsc_block_vector.h>
+#include <deal.II/lac/petsc_vector.h>
+#include <deal.II/lac/trilinos_epetra_vector.h>
+#include <deal.II/lac/trilinos_parallel_block_vector.h>
+#include <deal.II/lac/trilinos_tpetra_block_vector.h>
+#include <deal.II/lac/trilinos_tpetra_vector.h>
+#include <deal.II/lac/trilinos_vector.h>
+#include <deal.II/lac/vector.h>
+#include <deal.II/lac/vector_memory.templates.h>
+
+
+DEAL_II_NAMESPACE_OPEN
+
+#include "lac/vector_memory.inst"
+
+namespace internal
+{
+  namespace GrowingVectorMemoryImplementation
+  {
+    void
+    release_all_unused_memory()
+    {
+#include "lac/vector_memory_release.inst"
+      dealii::GrowingVectorMemory<dealii::LinearAlgebra::distributed::Vector<
+        float,
+        MemorySpace::Default>>::release_unused_memory();
+      dealii::GrowingVectorMemory<dealii::LinearAlgebra::distributed::Vector<
+        double,
+        MemorySpace::Default>>::release_unused_memory();
+
+      dealii::GrowingVectorMemory<
+        dealii::LinearAlgebra::distributed::
+          BlockVector<float, MemorySpace::Default>>::release_unused_memory();
+      dealii::GrowingVectorMemory<
+        dealii::LinearAlgebra::distributed::
+          BlockVector<double, MemorySpace::Default>>::release_unused_memory();
+    }
+  } // namespace GrowingVectorMemoryImplementation
+} // namespace internal
+
+DEAL_II_NAMESPACE_CLOSE

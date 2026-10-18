@@ -1,0 +1,62 @@
+// -----------------------------------------------------------------------------
+//
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception OR LGPL-2.1-or-later
+// Copyright (C) 2019 by the deal.II authors
+//
+// This file is part of the deal.II library.
+//
+// Detailed license information governing the source code and contributions
+// can be found in LICENSE.md and CONTRIBUTING.md at the top level directory.
+//
+// -----------------------------------------------------------------------------
+
+// TODO: Include complex types
+
+for (number : REAL_SCALARS)
+  {
+    namespace Differentiation
+    \{
+      namespace AD
+      \{
+
+        // -------------------------- TapedDrivers ----------------------
+
+        template struct TapedDrivers<typename Differentiation::AD::NumberTraits<
+                                       number,
+                                       NumberTypes::none>::ad_type,
+                                     number>;
+
+        // -------------------------- TapelessDrivers ----------------------
+
+        template struct TapelessDrivers<
+          typename Differentiation::AD::
+            NumberTraits<number, NumberTypes::none>::ad_type,
+          number>;
+
+      \}
+    \}
+  }
+
+// Instantiations for ADHelpers for which the underlying number type is fixed
+for ()
+  {
+    namespace Differentiation
+    \{
+      namespace AD
+      \{
+
+        // -------------------------- Types ----------------------
+
+        template struct Types<typename Differentiation::AD::NumberTraits<
+          double,
+          NumberTypes::none>::ad_type>;
+
+        // -------------------------- Numbers ----------------------
+
+        template struct Numbers<typename Differentiation::AD::NumberTraits<
+          double,
+          NumberTypes::none>::ad_type>;
+
+      \}
+    \}
+  }

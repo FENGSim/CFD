@@ -1,0 +1,1322 @@
+// -----------------------------------------------------------------------------
+//
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception OR LGPL-2.1-or-later
+// Copyright (C) 2014 - 2026 by the deal.II authors
+//
+// This file is part of the deal.II library.
+//
+// Detailed license information governing the source code and contributions
+// can be found in LICENSE.md and CONTRIBUTING.md at the top level directory.
+//
+// -----------------------------------------------------------------------------
+
+#ifndef dealii_time_stepping_templates_h
+#define dealii_time_stepping_templates_h
+
+#include <deal.II/base/config.h>
+
+#include <deal.II/base/exceptions.h>
+#include <deal.II/base/time_stepping.h>
+
+#include <functional>
+#include <memory>
+
+DEAL_II_NAMESPACE_OPEN
+
+namespace TimeStepping
+{
+  DeclExceptionMsg(ExcNoMethodSelected,
+                   "No method selected. You need to call initialize or pass a "
+                   "runge_kutta_method to the constructor.");
+
+  namespace internal
+  {
+    // ----------------------------------------------------------------------
+    // Explicit Tableaus
+    // ----------------------------------------------------------------------
+    inline void
+    fill_exp_forward_euler_tableau(std::vector<std::vector<double>> &a,
+                                   std::vector<double>              &b,
+                                   std::vector<double>              &c)
+    {
+      a = {{}};
+      b = {1.0};
+      c = {0.0};
+    }
+
+    inline void
+    fill_exp_heun_euler_tableau(std::vector<std::vector<double>> &a,
+                                std::vector<double>              &b,
+                                std::vector<double>              &c)
+    {
+      a = {{}, {1.0}};
+      b = {1.0 / 2.0, 1.0 / 2.0};
+      c = {0.0, 1.0};
+    }
+
+    inline void
+    fill_exp_rk_third_order_tableau(std::vector<std::vector<double>> &a,
+                                    std::vector<double>              &b,
+                                    std::vector<double>              &c)
+    {
+      a = {{}, {0.5}, {-1.0, 2.0}};
+      b = {1.0 / 6.0, 2.0 / 3.0, 1.0 / 6.0};
+      c = {0.0, 0.5, 1.0};
+    }
+
+    inline void
+    fill_exp_ssp_third_order_tableau(std::vector<std::vector<double>> &a,
+                                     std::vector<double>              &b,
+                                     std::vector<double>              &c)
+    {
+      a = {{}, {1.0}, {1.0 / 4.0, 1.0 / 4.0}};
+      b = {1.0 / 6.0, 1.0 / 6.0, 2.0 / 3.0};
+      c = {0.0, 1.0, 0.5};
+    }
+
+    inline void
+    fill_exp_rk_classic_fourth_order_tableau(
+      std::vector<std::vector<double>> &a,
+      std::vector<double>              &b,
+      std::vector<double>              &c)
+    {
+      a = {{}, {0.5}, {0.0, 0.5}, {0.0, 0.0, 1.0}};
+      b = {1.0 / 6.0, 1.0 / 3.0, 1.0 / 3.0, 1.0 / 6.0};
+      c = {0.0, 0.5, 0.5, 1.0};
+    }
+
+    inline void
+    fill_exp_rk_fifth_order_tableau(std::vector<std::vector<double>> &a,
+                                    std::vector<double>              &b,
+                                    std::vector<double>              &c)
+    {
+      /**
+       * Rabiei, F. and Ismail, F., 2012. Fifth-order improved
+       * Runge-Kutta method with reduced number of function evaluations.
+       * Australian Journal of Basic and Applied Sciences, 6(3),
+       * pp.97-105.
+       *
+       * Hossain, M.B., Hossain, M.J., Miah, M.M. and Alam, M.S., 2017.
+       * A comparative study on fourth order and butcher’s fifth order
+       * runge-kutta methods with third order initial value problem (IVP).
+       * Appl. Comput. Math, 6(6), p.243.
+       */
+      a = {{},
+           {1.0 / 4.0},
+           {1.0 / 8.0, 1.0 / 8.0},
+           {0.0, -1.0 / 2.0, 1.0},
+           {3.0 / 16.0, 0.0, 0.0, 9.0 / 16.0},
+           {-3.0 / 7.0, 2.0 / 7.0, 12.0 / 7.0, -12.0 / 7.0, 8.0 / 7.0}};
+      b = {7.0 / 90.0, 0.0, 32.0 / 90.0, 12.0 / 90.0, 32.0 / 90.0, 7.0 / 90.0};
+      c = {0.0, 1.0 / 4.0, 1.0 / 4.0, 1.0 / 2.0, 3.0 / 4.0, 1.0};
+    }
+
+    inline void
+    fill_exp_rk_sixth_order_tableau(std::vector<std::vector<double>> &a,
+                                    std::vector<double>              &b,
+                                    std::vector<double>              &c)
+    {
+      /**
+       * Butcher, J.C., 1964. On Runge-Kutta processes of high order.
+       * Journal of the Australian Mathematical Society, 4(2), pp.179-194.
+       */
+      a = {
+        {},
+        {1.0 / 3.0},
+        {0.0, 2.0 / 3.0},
+        {1.0 / 12.0, 1.0 / 3.0, -1.0 / 12.0},
+        {-1.0 / 16.0, 9.0 / 8.0, -3.0 / 16.0, -3.0 / 8.0},
+        {0.0, 9.0 / 8.0, -3.0 / 8.0, -3.0 / 4.0, 1.0 / 2.0},
+        {9.0 / 44.0, -9.0 / 11.0, 63.0 / 44.0, 18.0 / 11.0, 0.0, -16.0 / 11.0}};
+      b = {11.0 / 120.0,
+           0.0,
+           27.0 / 40.0,
+           27.0 / 40.0,
+           -4.0 / 15.0,
+           -4.0 / 15.0,
+           11.0 / 120.0};
+      c = {0.0, 1.0 / 3.0, 2.0 / 3.0, 1.0 / 3.0, 1.0 / 2.0, 1.0 / 2.0, 1.0};
+    }
+
+    inline void
+    fill_exp_tsitouras5_tableau(std::vector<std::vector<double>> &a,
+                                std::vector<double>              &b,
+                                std::vector<double>              &c)
+    {
+      /**
+       * Runge–Kutta pairs of order 5(4) satisfying only the first column
+       * simplifying assumption C. Tsitouras, CMA 62 (2011) 770-775
+       */
+      a = {{},
+           {0.161},
+           {-0.008480655492356989, 0.3354806554923570},
+           {2.8971530571054935, -6.359448489975075, 4.3622954328695815},
+           {5.325864828439257,
+            -11.748883564062828,
+            7.4955393428898365,
+            -0.09249506636175525},
+           {5.86145544294642,
+            -12.92096931784711,
+            8.159367898576159,
+            -0.07158497328140100,
+            -0.028269050394068383},
+           {0.09646076681806523,
+            0.01,
+            0.4798896504144996,
+            1.379008574103742,
+            -3.290069515436081,
+            2.324710524099774}};
+      c = {0.0, 0.161, 0.327, 0.9, 0.9800255409045097, 1.0, 1.0};
+      b = a.back();
+      b.push_back(0.0);
+    }
+
+    // ----------------------------------------------------------------------
+    // Low Storage Tableaus
+    // ----------------------------------------------------------------------
+    inline void
+    fill_ls_forward_euler_tableau(std::vector<std::vector<double>> &a,
+                                  std::vector<double>              &b)
+    {
+      a = {{}};
+      b = {1.0};
+    }
+
+    inline void
+    fill_ls_heun_euler_tableau(std::vector<std::vector<double>> &a,
+                               std::vector<double>              &b)
+    {
+      a = {{1.0}};
+      b = {0.5, 0.5};
+    }
+
+    inline void
+    fill_ls_stage3_order3_tableau(std::vector<std::vector<double>> &a,
+                                  std::vector<double>              &b)
+    {
+      a = {{0.755726351946097, 0.386954477304099}};
+      b = {0.245170287303492, 0.184896052186740, 0.569933660509768};
+    }
+
+    inline void
+    fill_ls_stage5_order4_tableau(std::vector<std::vector<double>> &a,
+                                  std::vector<double>              &b)
+    {
+      a = {{970286171893. / 4311952581923.,
+            6584761158862. / 12103376702013.,
+            2251764453980. / 15575788980749.,
+            26877169314380. / 34165994151039.}};
+      b = {1153189308089. / 22510343858157.,
+           1772645290293. / 4653164025191.,
+           -1672844663538. / 4480602732383.,
+           2114624349019. / 3568978502595.,
+           5198255086312. / 14908931495163.};
+    }
+
+    inline void
+    fill_ls_stage7_order4_tableau(std::vector<std::vector<double>> &a,
+                                  std::vector<double>              &b)
+    {
+      b = {0.0941840925477795334,
+           0.149683694803496998,
+           0.285204742060440058,
+           -0.122201846148053668,
+           0.0605151571191401122,
+           0.345986987898399296,
+           0.186627171718797670};
+      a = {{0.241566650129646868 + b[0],
+            0.0423866513027719953 + b[1],
+            0.215602732678803776 + b[2],
+            0.232328007537583987 + b[3],
+            0.256223412574146438 + b[4],
+            0.0978694102142697230 + b[5]}};
+    }
+
+    inline void
+    fill_ls_stage9_order5_tableau(std::vector<std::vector<double>> &a,
+                                  std::vector<double>              &b)
+    {
+      a = {{1107026461565. / 5417078080134.,
+            38141181049399. / 41724347789894.,
+            493273079041. / 11940823631197.,
+            1851571280403. / 6147804934346.,
+            11782306865191. / 62590030070788.,
+            9452544825720. / 13648368537481.,
+            4435885630781. / 26285702406235.,
+            2357909744247. / 11371140753790.}};
+      b = {2274579626619. / 23610510767302.,
+           693987741272. / 12394497460941.,
+           -347131529483. / 15096185902911.,
+           1144057200723. / 32081666971178.,
+           1562491064753. / 11797114684756.,
+           13113619727965. / 44346030145118.,
+           393957816125. / 7825732611452.,
+           720647959663. / 6565743875477.,
+           3559252274877. / 14424734981077.};
+    }
+
+    // ----------------------------------------------------------------------
+    // Implicit Tableaus
+    // ----------------------------------------------------------------------
+    inline void
+    fill_imp_backward_euler_tableau(std::vector<std::vector<double>> &a,
+                                    std::vector<double>              &b,
+                                    std::vector<double>              &c)
+    {
+      a = {{1.0}};
+      b = {1.0};
+      c = {1.0};
+    }
+
+    inline void
+    fill_imp_midpoint_tableau(std::vector<std::vector<double>> &a,
+                              std::vector<double>              &b,
+                              std::vector<double>              &c)
+    {
+      a = {{0.5}};
+      b = {1.0};
+      c = {0.5};
+    }
+
+    inline void
+    fill_imp_crank_nicolson_tableau(std::vector<std::vector<double>> &a,
+                                    std::vector<double>              &b,
+                                    std::vector<double>              &c)
+    {
+      a = {{0.0, 0.0}, {0.5, 0.5}};
+      b = {0.5, 0.5};
+      c = {0.0, 1.0};
+    }
+
+    inline void
+    fill_imp_sdirk_two_stages_tableau(std::vector<std::vector<double>> &a,
+                                      std::vector<double>              &b,
+                                      std::vector<double>              &c)
+    {
+      const double gamma = 1.0 - 1.0 / std::sqrt(2.0);
+      a                  = {{gamma, 0.0}, {1.0 - gamma, gamma}};
+      b                  = {1.0 - gamma, gamma};
+      c                  = {gamma, 1.0};
+    }
+
+    // ----------------------------------------------------------------------
+    // Embedded Explicit Tableaus
+    // ----------------------------------------------------------------------
+    inline void
+    fill_emb_heun_euler_tableau(std::vector<std::vector<double>> &a,
+                                std::vector<double>              &b1,
+                                std::vector<double>              &b2,
+                                std::vector<double>              &c)
+    {
+      a  = {{}, {1.0}};
+      c  = {0.0, 1.0};
+      b1 = {0.5, 0.5};
+      b2 = {1.0, 0.0};
+    }
+
+    inline void
+    fill_emb_bogacki_shampine_tableau(std::vector<std::vector<double>> &a,
+                                      std::vector<double>              &b1,
+                                      std::vector<double>              &b2,
+                                      std::vector<double>              &c)
+    {
+      a  = {{}, {0.5}, {0.0, 0.75}, {2.0 / 9.0, 1.0 / 3.0, 4.0 / 9.0}};
+      c  = {0.0, 0.5, 0.75, 1.0};
+      b1 = {2.0 / 9.0, 1.0 / 3.0, 4.0 / 9.0, 0.0};
+      b2 = {7.0 / 24.0, 0.25, 1.0 / 3.0, 0.125};
+    }
+
+    inline void
+    fill_emb_dopri_tableau(std::vector<std::vector<double>> &a,
+                           std::vector<double>              &b1,
+                           std::vector<double>              &b2,
+                           std::vector<double>              &c)
+    {
+      a = {
+        {},
+        {1. / 5.},
+        {3. / 40., 9. / 40.},
+        {44. / 45., -56. / 15., 32. / 9.},
+        {19372. / 6561., -25360. / 2187., 64448. / 6561., -212. / 729.},
+        {9017. / 3168.,
+         -355. / 33.,
+         46732. / 5247.,
+         49. / 176.,
+         -5103. / 18656.},
+        {35. / 384., 0., 500. / 1113., 125. / 192., -2187. / 6784., 11. / 84.}};
+      c  = {0., 1. / 5., 3. / 10., 4. / 5., 8. / 9., 1., 1.};
+      b1 = {35. / 384.,
+            0.,
+            500. / 1113.,
+            125. / 192.,
+            -2187. / 6784.,
+            11. / 84.,
+            0.};
+      b2 = {5179. / 57600.,
+            0.,
+            7571. / 16695.,
+            393. / 640.,
+            -92097. / 339200.,
+            187. / 2100.,
+            1. / 40.};
+    }
+
+    inline void
+    fill_emb_fehlberg_tableau(std::vector<std::vector<double>> &a,
+                              std::vector<double>              &b1,
+                              std::vector<double>              &b2,
+                              std::vector<double>              &c)
+    {
+      a  = {{},
+            {0.25},
+            {0.09375, 0.28125},
+            {1932.0 / 2197.0, -7200.0 / 2197.0, 7296.0 / 2197.0},
+            {439.0 / 216.0, -8.0, 3680.0 / 513.0, -845.0 / 4104.0},
+            {-8.0 / 27.0, 2.0, -3544.0 / 2565.0, 1859.0 / 4104.0, -0.275}};
+      c  = {0.0, 0.25, 0.375, 12.0 / 13.0, 1.0, 0.5};
+      b1 = {16.0 / 135.0,
+            0.0,
+            6656.0 / 12825.0,
+            28561.0 / 56430.0,
+            -0.18,
+            2.0 / 55.0};
+      b2 = {25.0 / 216.0, 0.0, 1408.0 / 2565.0, 2197.0 / 4104.0, -0.2, 0.0};
+    }
+
+    inline void
+    fill_emb_cash_karp_tableau(std::vector<std::vector<double>> &a,
+                               std::vector<double>              &b1,
+                               std::vector<double>              &b2,
+                               std::vector<double>              &c)
+    {
+      a  = {{},
+            {0.2},
+            {0.075, 0.225},
+            {0.3, -0.9, 1.2},
+            {-11.0 / 54.0, 2.5, -70.0 / 27.0, 35.0 / 27.0},
+            {1631.0 / 55296.0,
+             175.0 / 512.0,
+             575.0 / 13824.0,
+             44275.0 / 110592.0,
+             253.0 / 4096.0}};
+      c  = {0.0, 0.2, 0.3, 0.6, 1.0, 0.875};
+      b1 = {
+        37.0 / 378.0, 0.0, 250.0 / 621.0, 125.0 / 594.0, 0.0, 512.0 / 1771.0};
+      b2 = {2825.0 / 27648.0,
+            0.0,
+            18575.0 / 48384.0,
+            13525.0 / 55296.0,
+            277.0 / 14336.0,
+            0.25};
+    }
+
+    inline void
+    fill_emb_tsitouras5_tableau(std::vector<std::vector<double>> &a,
+                                std::vector<double>              &b1,
+                                std::vector<double>              &b2,
+                                std::vector<double>              &c)
+    {
+      a  = {{},
+            {0.161},
+            {-0.008480655492356989, 0.3354806554923570},
+            {2.8971530571054935, -6.359448489975075, 4.3622954328695815},
+            {5.325864828439257,
+             -11.748883564062828,
+             7.4955393428898365,
+             -0.09249506636175525},
+            {5.86145544294642,
+             -12.92096931784711,
+             8.159367898576159,
+             -0.07158497328140100,
+             -0.028269050394068383},
+            {0.09646076681806523,
+             0.01,
+             0.4798896504144996,
+             1.379008574103742,
+             -3.290069515436081,
+             2.324710524099774}};
+      c  = {0.0, 0.161, 0.327, 0.9, 0.9800255409045097, 1.0, 1.0};
+      b1 = a.back();
+      b1.push_back(0.0);
+      b2 = {b1[0] - 0.00178001105222577714,
+            b1[1] - 0.0008164344596567469,
+            b1[2] - (-0.007880878010261995),
+            b1[3] - 0.1447110071732629,
+            b1[4] - (-0.5823571654525552),
+            b1[5] - 0.45808210592918697,
+            b1[6] - (-1.0 / 66.0)};
+    }
+  } // namespace internal
+
+
+  // ----------------------------------------------------------------------
+  // RungeKutta
+  // ----------------------------------------------------------------------
+
+  template <typename VectorType>
+  double
+  RungeKutta<VectorType>::evolve_one_time_step(
+    std::vector<std::function<VectorType(const double, const VectorType &)>> &F,
+    std::vector<
+      std::function<VectorType(const double, const double, const VectorType &)>>
+      &J_inverse,
+
+    double      t,
+    double      delta_t,
+    VectorType &y)
+  {
+    AssertThrow(
+      F.empty(),
+      ExcMessage(
+        "RungeKutta methods cannot handle more that one function to integrate."));
+    AssertThrow(
+      J_inverse.empty(),
+      ExcMessage(
+        "RungeKutta methods cannot handle more that one function to integrate."));
+
+    return evolve_one_time_step(F[0], J_inverse[0], t, delta_t, y);
+  }
+
+
+
+  // ----------------------------------------------------------------------
+  // ExplicitRungeKutta
+  // ----------------------------------------------------------------------
+
+  template <typename VectorType>
+  ExplicitRungeKutta<VectorType>::ExplicitRungeKutta(
+    const runge_kutta_method method)
+  {
+    // virtual functions called in constructors and destructors never use the
+    // override in a derived class
+    // for clarity be explicit on which function is called
+    ExplicitRungeKutta<VectorType>::initialize(method);
+  }
+
+
+
+  template <typename VectorType>
+  void
+  ExplicitRungeKutta<VectorType>::initialize(const runge_kutta_method method)
+  {
+    status.method = method;
+
+    switch (method)
+      {
+        case (FORWARD_EULER):
+          {
+            this->n_stages = 1;
+            internal::fill_exp_forward_euler_tableau(this->a, this->b, this->c);
+            break;
+          }
+        case (HEUN_EULER):
+          {
+            this->n_stages = 2;
+            internal::fill_exp_heun_euler_tableau(this->a, this->b, this->c);
+            break;
+          }
+        case (RK_THIRD_ORDER):
+          {
+            this->n_stages = 3;
+            internal::fill_exp_rk_third_order_tableau(this->a,
+                                                      this->b,
+                                                      this->c);
+            break;
+          }
+        case (SSP_THIRD_ORDER):
+          {
+            this->n_stages = 3;
+            internal::fill_exp_ssp_third_order_tableau(this->a,
+                                                       this->b,
+                                                       this->c);
+            break;
+          }
+        case (RK_CLASSIC_FOURTH_ORDER):
+          {
+            this->n_stages = 4;
+            internal::fill_exp_rk_classic_fourth_order_tableau(this->a,
+                                                               this->b,
+                                                               this->c);
+            break;
+          }
+        case (RK_FIFTH_ORDER):
+          {
+            this->n_stages = 6;
+            internal::fill_exp_rk_fifth_order_tableau(this->a,
+                                                      this->b,
+                                                      this->c);
+            break;
+          }
+        case (RK_SIXTH_ORDER):
+          {
+            this->n_stages = 7;
+            internal::fill_exp_rk_sixth_order_tableau(this->a,
+                                                      this->b,
+                                                      this->c);
+            break;
+          }
+        case (TSITOURAS5):
+          {
+            this->n_stages = 7;
+            internal::fill_exp_tsitouras5_tableau(this->a, this->b, this->c);
+            break;
+          }
+        default:
+          {
+            AssertThrow(
+              false, ExcMessage("Unimplemented explicit Runge-Kutta method."));
+          }
+      }
+  }
+
+
+
+  template <typename VectorType>
+  double
+  ExplicitRungeKutta<VectorType>::evolve_one_time_step(
+    const std::function<VectorType(const double, const VectorType &)> &f,
+    const std::function<
+      VectorType(const double, const double, const VectorType &)>
+      & /*id_minus_tau_J_inverse*/,
+    double      t,
+    double      delta_t,
+    VectorType &y)
+  {
+    return evolve_one_time_step(f, t, delta_t, y);
+  }
+
+
+
+  template <typename VectorType>
+  double
+  ExplicitRungeKutta<VectorType>::evolve_one_time_step(
+    const std::function<VectorType(const double, const VectorType &)> &f,
+    double                                                             t,
+    double                                                             delta_t,
+    VectorType                                                        &y)
+  {
+    Assert(status.method != runge_kutta_method::invalid, ExcNoMethodSelected());
+
+    std::vector<VectorType> f_stages(this->n_stages, y);
+    // Compute the different stages needed.
+    compute_stages(f, t, delta_t, y, f_stages);
+
+    // Linear combinations of the stages.
+    for (unsigned int i = 0; i < this->n_stages; ++i)
+      y.sadd(1., delta_t * this->b[i], f_stages[i]);
+
+    return (t + delta_t);
+  }
+
+
+
+  template <typename VectorType>
+  const typename ExplicitRungeKutta<VectorType>::Status &
+  ExplicitRungeKutta<VectorType>::get_status() const
+  {
+    return status;
+  }
+
+
+
+  template <typename VectorType>
+  void
+  ExplicitRungeKutta<VectorType>::compute_stages(
+    const std::function<VectorType(const double, const VectorType &)> &f,
+    const double                                                       t,
+    const double                                                       delta_t,
+    const VectorType                                                  &y,
+    std::vector<VectorType> &f_stages) const
+  {
+    for (unsigned int i = 0; i < this->n_stages; ++i)
+      {
+        VectorType Y(y);
+        for (unsigned int j = 0; j < i; ++j)
+          Y.sadd(1., delta_t * this->a[i][j], f_stages[j]);
+        // Evaluate the function f at the point (t+c[i]*delta_t,Y).
+        f_stages[i] = f(t + this->c[i] * delta_t, Y);
+      }
+  }
+
+
+
+  // ----------------------------------------------------------------------
+  // LowStorageRungeKutta
+  // ----------------------------------------------------------------------
+
+  template <typename VectorType>
+  LowStorageRungeKutta<VectorType>::LowStorageRungeKutta(
+    const runge_kutta_method method)
+  {
+    // virtual functions called in constructors and destructors never use the
+    // override in a derived class
+    // for clarity be explicit on which function is called
+    LowStorageRungeKutta<VectorType>::initialize(method);
+  }
+
+
+
+  template <typename VectorType>
+  void
+  LowStorageRungeKutta<VectorType>::initialize(const runge_kutta_method method)
+  {
+    status.method = method;
+
+    switch (method)
+      {
+        case (FORWARD_EULER):
+          {
+            this->n_stages = 1;
+            internal::fill_ls_forward_euler_tableau(this->a, this->b);
+            break;
+          }
+        case (HEUN_EULER):
+          {
+            this->n_stages = 2;
+            internal::fill_ls_heun_euler_tableau(this->a, this->b);
+            break;
+          }
+        case (LOW_STORAGE_RK_STAGE3_ORDER3):
+          {
+            this->n_stages = 3;
+            internal::fill_ls_stage3_order3_tableau(this->a, this->b);
+            break;
+          }
+        case (LOW_STORAGE_RK_STAGE5_ORDER4):
+          {
+            this->n_stages = 5;
+            internal::fill_ls_stage5_order4_tableau(this->a, this->b);
+            break;
+          }
+        case (LOW_STORAGE_RK_STAGE7_ORDER4):
+          {
+            this->n_stages = 7;
+            internal::fill_ls_stage7_order4_tableau(this->a, this->b);
+            break;
+          }
+        case (LOW_STORAGE_RK_STAGE9_ORDER5):
+          {
+            this->n_stages = 9;
+            internal::fill_ls_stage9_order5_tableau(this->a, this->b);
+            break;
+          }
+        default:
+          {
+            AssertThrow(false,
+                        ExcMessage(
+                          "Unimplemented low-storage Runge-Kutta method."));
+          }
+      }
+
+    AssertDimension(this->a[0].size() + 1, this->b.size());
+
+    // compute ci
+    this->c.reserve(this->n_stages);
+    this->c.push_back(0.);
+    double sum_previous_bi = 0.;
+    for (unsigned int stage = 1; stage < this->n_stages; ++stage)
+      {
+        const double tmp = sum_previous_bi + this->a[0][stage - 1];
+        this->c.push_back(tmp);
+        sum_previous_bi += this->b[stage - 1];
+      }
+  }
+
+
+
+  template <typename VectorType>
+  double
+  LowStorageRungeKutta<VectorType>::evolve_one_time_step(
+    const std::function<VectorType(const double, const VectorType &)> &f,
+    const std::function<
+      VectorType(const double, const double, const VectorType &)>
+      & /*id_minus_tau_J_inverse*/,
+    double      t,
+    double      delta_t,
+    VectorType &y)
+  {
+    // We need two auxiliary vectors, namely the vector ki
+    // to hold the evaluation of the differential operator, and the vector ri
+    // that holds the right-hand side for the differential operator application.
+    VectorType vec_ri;
+    VectorType vec_ki;
+    return evolve_one_time_step(f, t, delta_t, y, vec_ri, vec_ki);
+  }
+
+
+
+  template <typename VectorType>
+  double
+  LowStorageRungeKutta<VectorType>::evolve_one_time_step(
+    const std::function<VectorType(const double, const VectorType &)> &f,
+    double                                                             t,
+    double                                                             delta_t,
+    VectorType                                                        &solution,
+    VectorType                                                        &vec_ri,
+    VectorType                                                        &vec_ki)
+  {
+    Assert(status.method != runge_kutta_method::invalid, ExcNoMethodSelected());
+
+    compute_one_stage(f,
+                      t,
+                      this->b[0] * delta_t,
+                      (this->a[0].empty() ? 0 : this->a[0][0]) * delta_t,
+                      solution,
+                      vec_ki,
+                      solution,
+                      vec_ri);
+
+    for (unsigned int stage = 1; stage < this->n_stages; ++stage)
+      {
+        const double c_i = this->c[stage];
+        const double factor_ai =
+          (stage == this->n_stages - 1 ? 0 : this->a[0][stage] * delta_t);
+        compute_one_stage(f,
+                          t + c_i * delta_t,
+                          this->b[stage] * delta_t,
+                          factor_ai,
+                          vec_ri,
+                          vec_ki,
+                          solution,
+                          vec_ri);
+      }
+    return (t + delta_t);
+  }
+
+  template <typename VectorType>
+  void
+  LowStorageRungeKutta<VectorType>::get_coefficients(
+    std::vector<double> &a,
+    std::vector<double> &b,
+    std::vector<double> &c) const
+  {
+    a.resize(this->a[0].size());
+    a = this->a[0];
+
+    b.resize(this->b.size());
+    b = this->b;
+
+    c.resize(this->c.size());
+    c = this->c;
+  }
+
+  template <typename VectorType>
+  const typename LowStorageRungeKutta<VectorType>::Status &
+  LowStorageRungeKutta<VectorType>::get_status() const
+  {
+    return status;
+  }
+
+  template <typename VectorType>
+  void
+  LowStorageRungeKutta<VectorType>::compute_one_stage(
+    const std::function<VectorType(const double, const VectorType &)> &f,
+    const double                                                       t,
+    const double      factor_solution,
+    const double      factor_ai,
+    const VectorType &current_ri,
+    VectorType       &vec_ki,
+    VectorType       &solution,
+    VectorType       &next_ri) const
+  {
+    const double ai = factor_ai;
+    const double bi = factor_solution;
+    vec_ki          = f(t, current_ri);
+
+    if (ai == double())
+      {
+        solution.sadd(1., bi, vec_ki);
+      }
+    else
+      {
+        next_ri = solution;
+        next_ri.sadd(1., ai, vec_ki);
+        solution.add(bi, vec_ki);
+      }
+  }
+
+
+  // ----------------------------------------------------------------------
+  // ImplicitRungeKutta
+  // ----------------------------------------------------------------------
+
+  template <typename VectorType>
+  ImplicitRungeKutta<VectorType>::ImplicitRungeKutta(
+    const runge_kutta_method method,
+    const unsigned int       max_it,
+    const double             tolerance)
+    : RungeKutta<VectorType>()
+    , max_it(max_it)
+    , tolerance(tolerance)
+  {
+    // virtual functions called in constructors and destructors never use the
+    // override in a derived class
+    // for clarity be explicit on which function is called
+    ImplicitRungeKutta<VectorType>::initialize(method);
+  }
+
+
+
+  template <typename VectorType>
+  void
+  ImplicitRungeKutta<VectorType>::initialize(const runge_kutta_method method)
+  {
+    status.method = method;
+
+    switch (method)
+      {
+        case (BACKWARD_EULER):
+          {
+            this->n_stages = 1;
+            internal::fill_imp_backward_euler_tableau(this->a,
+                                                      this->b,
+                                                      this->c);
+            break;
+          }
+        case (IMPLICIT_MIDPOINT):
+          {
+            this->n_stages = 1;
+            internal::fill_imp_midpoint_tableau(this->a, this->b, this->c);
+            break;
+          }
+        case (CRANK_NICOLSON):
+          {
+            this->n_stages = 2;
+            internal::fill_imp_crank_nicolson_tableau(this->a,
+                                                      this->b,
+                                                      this->c);
+            break;
+          }
+        case (SDIRK_TWO_STAGES):
+          {
+            this->n_stages = 2;
+            internal::fill_imp_sdirk_two_stages_tableau(this->a,
+                                                        this->b,
+                                                        this->c);
+            break;
+          }
+
+        default:
+          {
+            AssertThrow(
+              false, ExcMessage("Unimplemented implicit Runge-Kutta method."));
+          }
+      }
+  }
+
+
+
+  template <typename VectorType>
+  double
+  ImplicitRungeKutta<VectorType>::evolve_one_time_step(
+    const std::function<VectorType(const double, const VectorType &)> &f,
+    const std::function<VectorType(const double,
+                                   const double,
+                                   const VectorType &)> &id_minus_tau_J_inverse,
+    double                                               t,
+    double                                               delta_t,
+    VectorType                                          &y)
+  {
+    Assert(status.method != runge_kutta_method::invalid, ExcNoMethodSelected());
+
+    VectorType              old_y(y);
+    std::vector<VectorType> f_stages(this->n_stages, y);
+    // Compute the different stages needed.
+    compute_stages(f, id_minus_tau_J_inverse, t, delta_t, y, f_stages);
+
+    y = old_y;
+    for (unsigned int i = 0; i < this->n_stages; ++i)
+      y.sadd(1., delta_t * this->b[i], f_stages[i]);
+
+    return (t + delta_t);
+  }
+
+
+
+  template <typename VectorType>
+  void
+  ImplicitRungeKutta<VectorType>::set_newton_solver_parameters(
+    unsigned int max_it_,
+    double       tolerance_)
+  {
+    max_it    = max_it_;
+    tolerance = tolerance_;
+  }
+
+
+
+  template <typename VectorType>
+  const typename ImplicitRungeKutta<VectorType>::Status &
+  ImplicitRungeKutta<VectorType>::get_status() const
+  {
+    return status;
+  }
+
+
+
+  template <typename VectorType>
+  void
+  ImplicitRungeKutta<VectorType>::compute_stages(
+    const std::function<VectorType(const double, const VectorType &)> &f,
+    const std::function<VectorType(const double,
+                                   const double,
+                                   const VectorType &)> &id_minus_tau_J_inverse,
+    double                                               t,
+    double                                               delta_t,
+    VectorType                                          &y,
+    std::vector<VectorType>                             &f_stages)
+  {
+    VectorType z(y);
+    for (unsigned int i = 0; i < this->n_stages; ++i)
+      {
+        VectorType old_y(z);
+        for (unsigned int j = 0; j < i; ++j)
+          old_y.sadd(1., delta_t * this->a[i][j], f_stages[j]);
+
+        // Solve the nonlinear system using Newton's method
+        const double new_t       = t + this->c[i] * delta_t;
+        const double new_delta_t = this->a[i][i] * delta_t;
+        VectorType  &f_stage     = f_stages[i];
+        newton_solve(
+          [this, &f, new_t, new_delta_t, &old_y, &f_stage](
+            const VectorType &y, VectorType &residual) {
+            this->compute_residual(
+              f, new_t, new_delta_t, old_y, y, f_stage, residual);
+          },
+          [&id_minus_tau_J_inverse, new_t, new_delta_t](const VectorType &y) {
+            return id_minus_tau_J_inverse(new_t, new_delta_t, y);
+          },
+          y);
+      }
+  }
+
+
+
+  template <typename VectorType>
+  void
+  ImplicitRungeKutta<VectorType>::newton_solve(
+    const std::function<void(const VectorType &, VectorType &)> &get_residual,
+    const std::function<VectorType(const VectorType &)> &id_minus_tau_J_inverse,
+    VectorType                                          &y)
+  {
+    VectorType residual(y);
+    get_residual(y, residual);
+    unsigned int i                     = 0;
+    const double initial_residual_norm = residual.l2_norm();
+    double       norm_residual         = initial_residual_norm;
+    while (i < max_it)
+      {
+        y.sadd(1.0, -1.0, id_minus_tau_J_inverse(residual));
+        get_residual(y, residual);
+        norm_residual = residual.l2_norm();
+        if (norm_residual < tolerance)
+          break;
+        ++i;
+      }
+    status.n_iterations  = i + 1;
+    status.norm_residual = norm_residual;
+  }
+
+
+
+  template <typename VectorType>
+  void
+  ImplicitRungeKutta<VectorType>::compute_residual(
+    const std::function<VectorType(const double, const VectorType &)> &f,
+    double                                                             t,
+    double                                                             delta_t,
+    const VectorType                                                  &old_y,
+    const VectorType                                                  &y,
+    VectorType                                                        &tendency,
+    VectorType &residual) const
+  {
+    // The tendency is stored to save one evaluation of f.
+    tendency = f(t, y);
+    residual = tendency;
+    residual.sadd(delta_t, 1.0, old_y);
+    residual.sadd(-1.0, 1., y);
+  }
+
+
+
+  // ----------------------------------------------------------------------
+  // EmbeddedExplicitRungeKutta
+  // ----------------------------------------------------------------------
+
+  template <typename VectorType>
+  EmbeddedExplicitRungeKutta<VectorType>::EmbeddedExplicitRungeKutta(
+    const runge_kutta_method method,
+    const double             coarsen_param,
+    const double             refine_param,
+    const double             min_delta,
+    const double             max_delta,
+    const double             refine_tol,
+    const double             coarsen_tol)
+    : coarsen_param(coarsen_param)
+    , refine_param(refine_param)
+    , min_delta_t(min_delta)
+    , max_delta_t(max_delta)
+    , refine_tol(refine_tol)
+    , coarsen_tol(coarsen_tol)
+    , last_same_as_first(false)
+    , status{}
+  {
+    // virtual functions called in constructors and destructors never use the
+    // override in a derived class
+    // for clarity be explicit on which function is called
+    EmbeddedExplicitRungeKutta<VectorType>::initialize(method);
+  }
+
+
+
+  template <typename VectorType>
+  void
+  EmbeddedExplicitRungeKutta<VectorType>::initialize(
+    const runge_kutta_method method)
+  {
+    status.method = method;
+
+    switch (method)
+      {
+        case (HEUN_EULER):
+          {
+            this->n_stages = 2;
+            internal::fill_emb_heun_euler_tableau(this->a,
+                                                  this->b1,
+                                                  this->b2,
+                                                  this->c);
+            break;
+          }
+        case (BOGACKI_SHAMPINE):
+          {
+            last_same_as_first = true;
+            this->n_stages     = 4;
+            internal::fill_emb_bogacki_shampine_tableau(this->a,
+                                                        this->b1,
+                                                        this->b2,
+                                                        this->c);
+            break;
+          }
+        case (DOPRI):
+          {
+            last_same_as_first = true;
+            this->n_stages     = 7;
+            internal::fill_emb_dopri_tableau(this->a,
+                                             this->b1,
+                                             this->b2,
+                                             this->c);
+            break;
+          }
+        case (FEHLBERG):
+          {
+            this->n_stages = 6;
+            internal::fill_emb_fehlberg_tableau(this->a,
+                                                this->b1,
+                                                this->b2,
+                                                this->c);
+            break;
+          }
+        case (CASH_KARP):
+          {
+            this->n_stages = 6;
+            internal::fill_emb_cash_karp_tableau(this->a,
+                                                 this->b1,
+                                                 this->b2,
+                                                 this->c);
+            break;
+          }
+        case (TSITOURAS5):
+          {
+            last_same_as_first = true;
+            this->n_stages     = 7;
+            internal::fill_emb_tsitouras5_tableau(this->a,
+                                                  this->b1,
+                                                  this->b2,
+                                                  this->c);
+            break;
+          }
+        default:
+          {
+            AssertThrow(
+              false, ExcMessage("Unimplemented Embedded Runge-Kutta method."));
+          }
+      }
+  }
+
+
+
+  template <typename VectorType>
+  double
+  EmbeddedExplicitRungeKutta<VectorType>::evolve_one_time_step(
+    const std::function<VectorType(const double, const VectorType &)> &f,
+    const std::function<
+      VectorType(const double, const double, const VectorType &)>
+      & /*id_minus_tau_J_inverse*/,
+    double      t,
+    double      delta_t,
+    VectorType &y)
+  {
+    return evolve_one_time_step(f, t, delta_t, y);
+  }
+
+
+
+  template <typename VectorType>
+  double
+  EmbeddedExplicitRungeKutta<VectorType>::evolve_one_time_step(
+    const std::function<VectorType(const double, const VectorType &)> &f,
+    double                                                             t,
+    double                                                             delta_t,
+    VectorType                                                        &y)
+  {
+    Assert(status.method != runge_kutta_method::invalid, ExcNoMethodSelected());
+
+    bool                    done       = false;
+    unsigned int            count      = 0;
+    double                  error_norm = 0.;
+    VectorType              old_y(y);
+    VectorType              error(y);
+    std::vector<VectorType> f_stages(this->n_stages, y);
+
+    while (!done)
+      {
+        error = 0.;
+        y     = old_y;
+        // Compute the different stages needed.
+        compute_stages(f, t, delta_t, y, f_stages);
+
+        for (unsigned int i = 0; i < this->n_stages; ++i)
+          {
+            y.sadd(1., delta_t * this->b1[i], f_stages[i]);
+            error.sadd(1., delta_t * (b2[i] - b1[i]), f_stages[i]);
+          }
+
+        error_norm = error.l2_norm();
+        // Check if the norm of error is less than the coarsening tolerance
+        if (error_norm < coarsen_tol)
+          {
+            done = true;
+            // Increase the guessed time step
+            double new_delta_t = delta_t * coarsen_param;
+            // Check that the guessed time step is smaller than the maximum time
+            // step allowed.
+            if (new_delta_t > max_delta_t)
+              {
+                status.exit_delta_t  = MAX_DELTA_T;
+                status.delta_t_guess = max_delta_t;
+              }
+            else
+              {
+                status.exit_delta_t  = DELTA_T;
+                status.delta_t_guess = new_delta_t;
+              }
+          }
+        // Check if the norm of error is less than the refining tolerance
+        else if (error_norm < refine_tol)
+          {
+            done                 = true;
+            status.exit_delta_t  = DELTA_T;
+            status.delta_t_guess = delta_t;
+          }
+        else
+          {
+            // If the time step is already the smallest acceptable, exit.
+            if (delta_t == min_delta_t)
+              {
+                done                 = true;
+                status.exit_delta_t  = MIN_DELTA_T;
+                status.delta_t_guess = delta_t;
+              }
+            // Reduce the time step.
+            else
+              {
+                delta_t *= refine_param;
+                if (delta_t < min_delta_t)
+                  delta_t = min_delta_t;
+              }
+          }
+
+        ++count;
+      }
+
+    // Save the last stage if necessary
+    if (last_same_as_first == true)
+      {
+        if (last_stage == nullptr)
+          last_stage = std::make_unique<VectorType>(f_stages.back());
+        else
+          *last_stage = f_stages.back();
+      }
+
+    status.n_iterations = count;
+    status.error_norm   = error_norm;
+
+    return (t + delta_t);
+  }
+
+
+
+  template <typename VectorType>
+  void
+  EmbeddedExplicitRungeKutta<VectorType>::set_time_adaptation_parameters(
+    const double coarsen_param_,
+    const double refine_param_,
+    const double min_delta_,
+    const double max_delta_,
+    const double refine_tol_,
+    const double coarsen_tol_)
+  {
+    coarsen_param = coarsen_param_;
+    refine_param  = refine_param_;
+    min_delta_t   = min_delta_;
+    max_delta_t   = max_delta_;
+    refine_tol    = refine_tol_;
+    coarsen_tol   = coarsen_tol_;
+  }
+
+
+
+  template <typename VectorType>
+  const typename EmbeddedExplicitRungeKutta<VectorType>::Status &
+  EmbeddedExplicitRungeKutta<VectorType>::get_status() const
+  {
+    return status;
+  }
+
+
+  template <typename VectorType>
+  void
+  EmbeddedExplicitRungeKutta<VectorType>::compute_stages(
+    const std::function<VectorType(const double, const VectorType &)> &f,
+    const double                                                       t,
+    const double                                                       delta_t,
+    const VectorType                                                  &y,
+    std::vector<VectorType>                                           &f_stages)
+  {
+    VectorType   Y(y);
+    unsigned int i = 0;
+
+    // If the last stage is the same as the first, we can skip the evaluation
+    // of the first stage.
+    if (last_same_as_first == true)
+      {
+        if (last_stage != nullptr)
+          {
+            f_stages[0] = *last_stage;
+            i           = 1;
+          }
+      }
+
+    for (; i < this->n_stages; ++i)
+      {
+        Y = y;
+        for (unsigned int j = 0; j < i; ++j)
+          Y.sadd(1.0, delta_t * this->a[i][j], f_stages[j]);
+        f_stages[i] = f(t + this->c[i] * delta_t, Y);
+      }
+  }
+} // namespace TimeStepping
+
+DEAL_II_NAMESPACE_CLOSE
+
+#endif

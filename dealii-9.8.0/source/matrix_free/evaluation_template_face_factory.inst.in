@@ -1,0 +1,29 @@
+// -----------------------------------------------------------------------------
+//
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception OR LGPL-2.1-or-later
+// Copyright (C) 2022 by the deal.II authors
+//
+// This file is part of the deal.II library.
+//
+// Detailed license information governing the source code and contributions
+// can be found in LICENSE.md and CONTRIBUTING.md at the top level directory.
+//
+// -----------------------------------------------------------------------------
+
+
+for (deal_II_dimension : DIMENSIONS;
+     deal_II_scalar_vectorized : REAL_SCALARS_VECTORIZED)
+  {
+    template struct dealii::internal::
+      FEFaceEvaluationFactory<deal_II_dimension, deal_II_scalar_vectorized>;
+
+    template struct dealii::internal::FEFaceEvaluationGatherFactory<
+      deal_II_dimension,
+      double,
+      deal_II_scalar_vectorized>;
+
+    template struct dealii::internal::FEFaceEvaluationGatherFactory<
+      deal_II_dimension,
+      float,
+      deal_II_scalar_vectorized>;
+  }
