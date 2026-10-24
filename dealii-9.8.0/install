@@ -1,0 +1,5 @@
+mkdir build
+cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=$PWD/../../install/dealii-9.8.0
+make -j8
+make install
