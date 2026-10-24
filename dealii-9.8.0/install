@@ -1,5 +1,7 @@
+sudo apt -y install libp4est-dev
+
 mkdir build
 cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=$PWD/../../install/dealii-9.8.0
+cmake .. -DCMAKE_INSTALL_PREFIX=$PWD/../../install/dealii-9.8.0 -DDEAL_II_WITH_MPI=ON -DDEAL_II_WITH_P4EST=ON
 make -j8
 make install
